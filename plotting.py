@@ -8,7 +8,7 @@ def states(x_k: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_
     """Plot states on 4 subplots.
     
     Args:
-        x: 4xT array of states at each time step, [X,Xdot,Y,Ydot]
+        x_k: 4xT array of states at each time step, [X,Xdot,Y,Ydot]
         t: array of length T, times
         axs: list of 4 matplotlib Axes objects to plot on
         legend_label: optional string to use for legend
@@ -38,7 +38,20 @@ def states(x_k: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_
     axs[2].set(ylabel='Y [km]')
     axs[3].set(ylabel='Ydot [km/s]')
 
+def measurements(y_k: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_label:str = ''):
+    """Plot measurements and station IDs on 4 subplots.
     
+    Args:
+        y_k: 2d array of measurements at each time step
+        t: array of length T, times
+        axs: list of 4 matplotlib Axes objects to plot on
+        legend_label: optional string to use for legend
+    """
+    
+    # separate measurments into arrays per station id
+    # give each station id a color
+    # plot per station id
+
 
 # TODO:
 # measurement plotting
