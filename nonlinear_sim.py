@@ -8,6 +8,7 @@ import numpy as np
 from scipy import integrate
 
 import problem_setup
+import plotting
 
 
 def main():
@@ -16,8 +17,11 @@ def main():
     X = x[0, :]
     Y = x[2, :]
 
-    plt.figure()
-    plt.plot(X, Y)
+    fig,axs= plt.subplots(4,1)
+    plotting.states(x,t,axs)
+    fig.suptitle('Nonlinear Sim')
+    fig.tight_layout()
+    
     plt.show()
 
 
