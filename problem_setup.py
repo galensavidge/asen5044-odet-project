@@ -23,8 +23,8 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     measurements = []
     for ii in range(12):
         theta = OMEGA_EARTH * time + ii * np.pi / 6
-        Xi, Yi = R_EARTH * [np.cos(theta), np.sin(theta)]
-        Xdoti, Ydoti = R_EARTH * OMEGA_EARTH * [np.sin(theta), -np.cos(theta)]
+        Xi, Yi = R_EARTH * np.array([np.cos(theta), np.sin(theta)])
+        Xdoti, Ydoti = R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
 
         phi = np.arctan2(Y - Yi, X - Xi)
 
@@ -38,6 +38,22 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
         measurements.append([rho, rhodot, phi, ii + 1])
 
     return np.array(measurements)
+
+def states_to_meas(x_k: np.ndarray,time:np.ndarray) -> np.ndarray:
+    """Converts series of state vectors to measurement vectors.
+    
+    Args:
+        x_k: 4xT array of satellite state vectors at each time step
+        time: array of length T of time at each time step
+
+    Returns:
+        y_k: 2d array of outputs, first  dimension length of T, second dimension length varies according to number of ground stations in view
+    """
+
+    y_k = [[] for i in time]
+    for idx in range(np.size(time)):
+        y_k[idx] = get_measurements(x_k[:,idx],time[idx])
+    return y_k
 
 
 @dataclasses.dataclass

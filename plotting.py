@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.axes
 import numpy as np
 
-def states(x: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_label:str = ''):
+def states(x_k: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_label:str = ''):
     """Plot states on 4 subplots.
     
     Args:
@@ -15,10 +15,10 @@ def states(x: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_la
     """
 
     # separate states
-    X = x[0, :]
-    Xdot = x[1, :]
-    Y = x[2, :] 
-    Ydot = x[3, :]
+    X = x_k[0, :]
+    Xdot = x_k[1, :]
+    Y = x_k[2, :] 
+    Ydot = x_k[3, :]
     
     # plot
     axs[0].plot(t,X,label=legend_label)
@@ -29,7 +29,7 @@ def states(x: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_la
     # add labels
     for ax in axs:
         ax.set(xlim=[t[0],t[-1]],xlabel='Time [s]')
-        
+
         if legend_label:
             ax.legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
 
@@ -39,3 +39,6 @@ def states(x: np.ndarray,t: np.ndarray,axs: list[matplotlib.axes.Axes],legend_la
     axs[3].set(ylabel='Ydot [km/s]')
 
     
+
+# TODO:
+# measurement plotting
