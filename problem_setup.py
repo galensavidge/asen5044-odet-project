@@ -59,7 +59,7 @@ def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> np.ndarray:
 
     y_k = [[] for i in time]
     for idx in range(np.size(time)):
-        y_k[idx] = get_measurements(x_k[:, idx], time[idx])
+        y_k[idx] = get_measurements(x_k[idx,:], time[idx])
     return y_k
 
 

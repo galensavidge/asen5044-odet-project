@@ -22,9 +22,9 @@ def main():
     dx0 = np.array([3,0,0,0])
     u_k = np.zeros((np.size(t),2))
     
-    dx_k,dy_k = prop_pert(dx0,np.transpose(x_k),u_k,op.dt,problem_setup.MU_EARTH)
+    dx_k,dy_k = prop_pert(dx0,x_k,u_k,op.dt,problem_setup.MU_EARTH)
     # TAKE THIS OUT WHEN THIS IS FIXED
-    dx_k = np.transpose(dx_k)
+    # dx_k = np.transpose(dx_k)
 
     # prop nonlinear perturbations
     _,x_k_pert = nonlinear_sim.integrate_nl_ct_eom(op.x0 + dx0, np.arange(0, op.T0, op.dt))

@@ -51,7 +51,7 @@ def integrate_nl_ct_eom(x0: np.ndarray,
                                    rtol=1e-9,
                                    atol=1e-9)
 
-    return solution.t, solution.y
+    return solution.t, np.transpose(solution.y)
 
 
 if __name__ == "__main__":
