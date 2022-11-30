@@ -21,11 +21,16 @@ def main():
 
     fig,axs= plt.subplots(4,1)
     plotting.states(x_k,t,axs)
-    fig.suptitle('Nonlinear Sim')
+    fig.suptitle('Nonlinear Sim States')
     fig.tight_layout()
 
     # measurements
     y_k = problem_setup.states_to_meas(x_k,t)
+
+    fig2,axs2 = plt.subplots(4,1)
+    plotting.measurements(y_k,t,axs2)
+    fig2.suptitle('Nonlinear Sim Measurements')
+    fig2.tight_layout()
         
     plt.show()
 

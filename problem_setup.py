@@ -23,13 +23,16 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     measurements = []
     for ii in range(12):
         theta = OMEGA_EARTH * time + ii * np.pi / 6
+        theta = np.arctan2(np.sin(theta),np.cos(theta))
         Xi, Yi = R_EARTH * np.array([np.cos(theta), np.sin(theta)])
         Xdoti, Ydoti = R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
 
         phi = np.arctan2(Y - Yi, X - Xi)
 
         # Check if the satellite is in view of this station
-        if not -np.pi / 2 < phi - theta < np.pi / 2:
+        # if not -np.pi / 2 < phi - theta < np.pi / 2:
+        ang_diff = phi - theta
+        if not np.abs(ang_diff) < np.pi / 2:
             continue
 
         rho = np.sqrt((X - Xi)**2 + (Y - Yi)**2)
@@ -74,3 +77,7 @@ class OdetProblem:
 
     def __init__(self) -> None:
         self.x0 = [self.r0, 0, 0, self.v0]
+
+
+# TODO:
+# fix angle diff calc in measurements
