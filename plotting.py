@@ -20,10 +20,10 @@ def states(x_k: np.ndarray,
     """
 
     # separate states
-    X = x_k[0, :]
-    Xdot = x_k[1, :]
-    Y = x_k[2, :]
-    Ydot = x_k[3, :]
+    X = x_k[:,0]
+    Xdot = x_k[:,1]
+    Y = x_k[:,2]
+    Ydot = x_k[:,3]
 
     # plot
     axs[0].plot(t, X, label=legend_label)
