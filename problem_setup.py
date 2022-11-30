@@ -2,6 +2,8 @@ import dataclasses
 
 import numpy as np
 
+import util
+
 MU_EARTH = 398600.  # [km^3/s^2]
 R_EARTH = 6378.  # [km]
 
@@ -23,15 +25,15 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     measurements = []
     for ii in range(12):
         theta = OMEGA_EARTH * time + ii * np.pi / 6
-        theta = np.arctan2(np.sin(theta),np.cos(theta))
         Xi, Yi = R_EARTH * np.array([np.cos(theta), np.sin(theta)])
-        Xdoti, Ydoti = R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
+        Xdoti, Ydoti = R_EARTH * OMEGA_EARTH * np.array(
+            [np.sin(theta), -np.cos(theta)])
 
         phi = np.arctan2(Y - Yi, X - Xi)
 
         # Check if the satellite is in view of this station
-        # if not -np.pi / 2 < phi - theta < np.pi / 2:
-        ang_diff = phi - theta
+        theta = np.arctan2(Yi, Xi)
+        ang_diff = util.wrap_angle_negpi_pi(phi - theta)
         if not np.abs(ang_diff) < np.pi / 2:
             continue
 
@@ -42,20 +44,22 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
 
     return np.array(measurements)
 
-def states_to_meas(x_k: np.ndarray,time:np.ndarray) -> np.ndarray:
+
+def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> np.ndarray:
     """Converts series of state vectors to measurement vectors.
-    
+
     Args:
         x_k: 4xT array of satellite state vectors at each time step
         time: array of length T of time at each time step
 
     Returns:
-        y_k: 2d array of outputs, first  dimension length of T, second dimension length varies according to number of ground stations in view
+        y_k: 2d array of outputs, first  dimension length of T, second
+        dimension length varies according to number of ground stations in view
     """
 
     y_k = [[] for i in time]
     for idx in range(np.size(time)):
-        y_k[idx] = get_measurements(x_k[:,idx],time[idx])
+        y_k[idx] = get_measurements(x_k[:, idx], time[idx])
     return y_k
 
 
@@ -73,7 +77,7 @@ class OdetProblem:
     T0: float = 2 * np.pi * r0 * np.sqrt(r0 / MU_EARTH)
 
     # Time between measurements
-    dt = 10  # [sec]
+    dt: float = 10  # [sec]
 
     def __init__(self) -> None:
         self.x0 = [self.r0, 0, 0, self.v0]
