@@ -16,25 +16,21 @@ def main():
     # nonlinear states
     op = problem_setup.OdetProblem()
     t, x_k = integrate_nl_ct_eom(op.x0, np.arange(0, op.T0, op.dt))
-    X = x_k[0, :]
-    Y = x_k[2, :]
 
-    fig,axs= plt.subplots(4,1)
-    plotting.states(x_k,t,axs)
+    fig, axs = plt.subplots(4, 1)
+    plotting.states(x_k, t, axs)
     fig.suptitle('Nonlinear Sim States')
     fig.tight_layout()
 
     # measurements
-    y_k = problem_setup.states_to_meas(x_k,t)
+    y_k = problem_setup.states_to_meas(x_k, t)
 
-    fig2,axs2 = plt.subplots(4,1)
-    plotting.measurements(y_k,t,axs2)
+    fig2, axs2 = plt.subplots(4, 1)
+    plotting.measurements(y_k, t, axs2)
     fig2.suptitle('Nonlinear Sim Measurements')
     fig2.tight_layout()
-        
+
     plt.show()
-
-
 
 
 def nonlinear_ct_eom(x: np.ndarray) -> np.ndarray:
@@ -60,4 +56,3 @@ def integrate_nl_ct_eom(x0: np.ndarray,
 
 if __name__ == "__main__":
     main()
-
