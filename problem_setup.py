@@ -10,6 +10,18 @@ R_EARTH = 6378.  # [km]
 OMEGA_EARTH = 2 * np.pi / 86400.  # [rad/sec]
 
 
+def ground_station_position(station_id: int, time: float):
+    """Returns the Cartesian position of a ground station."""
+    theta = OMEGA_EARTH * time + station_id * np.pi / 6
+    return R_EARTH * np.array([np.cos(theta), np.sin(theta)])
+
+
+def ground_station_velocity(station_id: int, time: float):
+    """Returns the Cartesian velocity of a ground station."""
+    theta = OMEGA_EARTH * time + station_id * np.pi / 6
+    return R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
+
+
 def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     """Calculates measurements for all ground stations at a specific time.
 
@@ -25,14 +37,12 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     measurements = []
     for ii in range(12):
         theta = OMEGA_EARTH * time + ii * np.pi / 6
-        Xi, Yi = R_EARTH * np.array([np.cos(theta), np.sin(theta)])
-        Xdoti, Ydoti = R_EARTH * OMEGA_EARTH * np.array(
-            [np.sin(theta), -np.cos(theta)])
+        Xi, Yi = ground_station_position(ii, time)
+        Xdoti, Ydoti = ground_station_velocity(ii, time)
 
         phi = np.arctan2(Y - Yi, X - Xi)
 
         # Check if the satellite is in view of this station
-        theta = np.arctan2(Yi, Xi)
         ang_diff = util.wrap_angle_negpi_pi(phi - theta)
         if not np.abs(ang_diff) < np.pi / 2:
             continue
@@ -81,7 +91,3 @@ class OdetProblem:
 
     def __init__(self) -> None:
         self.x0 = [self.r0, 0, 0, self.v0]
-
-
-# TODO:
-# fix angle diff calc in measurements
