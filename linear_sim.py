@@ -18,7 +18,6 @@ def main():
     prop_time = 1401 * op.dt
     t, x_k = nonlinear_sim.integrate_nl_ct_eom(op.x0,
                                                np.arange(0, prop_time, op.dt))
-    y_k = problem_setup.states_to_meas(x_k, t)
 
     # prop nonlinear perturbations
     # dx0 = np.array([5,0.1,5,0.1])
@@ -26,18 +25,25 @@ def main():
     dx0 = np.array([0, 0.075, 0, -0.021])
     _, x_k_pert_nl = nonlinear_sim.integrate_nl_ct_eom(
         op.x0 + dx0, np.arange(0, prop_time, op.dt))
-    y_k_pert_nl = problem_setup.states_to_meas(x_k_pert_nl, t)
+    station_ids_list = [
+        problem_setup.find_visible_stations(x, t)
+        for x, t in zip(x_k_pert_nl, t)
+    ]
+    y_k = problem_setup.states_to_meas(x_k, t, station_ids_list)
+    y_k_pert_nl = problem_setup.states_to_meas(x_k_pert_nl, t,
+                                               station_ids_list)
 
     # prop linearized perturbations
     u_k = np.zeros((np.size(t), 2))
 
-    dx_k, dy_k = prop_pert(dx0, x_k, x_k_pert_nl, u_k, op.dt,
+    dx_k, dy_k = prop_pert(dx0, x_k, station_ids_list, u_k, op.dt,
                            problem_setup.MU_EARTH)
 
     dx_k_nl = x_k_pert_nl - x_k
 
     # full perturbed solution
-    x_k_pert, y_k_pert = pert_sol(x_k, dx_k, x_k_pert_nl, dy_k, op.dt)
+    x_k_pert, y_k_pert = pert_sol(x_k, dx_k, station_ids_list, dy_k, op.dt)
+
 
     # fig,axs= plt.subplots(4,1)
     # plotting.states(dx_k,t,axs,'Linearized')
@@ -71,7 +77,7 @@ def main():
     plt.show()
 
 
-def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, x_k_pert: np.ndarray,
+def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, station_ids_list: List,
              dy_k: List, dt: float) -> Tuple[np.ndarray, List]:
     """Add the linearized perturbations to the nominal state to get the full
     perturbed solution.
@@ -82,11 +88,9 @@ def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, x_k_pert: np.ndarray,
     x_k = x_k_nom + dx_k
 
     y_k = [[] for i in x_k_nom]
-    for t_idx, (x_nom, x_pert) in enumerate(zip(x_k_nom, x_k_pert)):
+    for t_idx, (x_nom, station_ids) in enumerate(zip(x_k_nom,
+                                                     station_ids_list)):
         t = dt * t_idx
-
-        # Use NL perturbed sol to check ground stations in view
-        station_ids = problem_setup.find_visible_stations(x_pert, t)
 
         # get nominal measurements for each of the ground stations in view of
         # the perturbed state
@@ -94,21 +98,20 @@ def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, x_k_pert: np.ndarray,
 
         # add perturbation to get perturbed measurements
         dy = dy_k[t_idx]
+        y = []
         for idx, meas in enumerate(y_nom):
-            y = []
             pert = dy[idx]
             full = np.array(meas[0:3]) + np.array(pert[0:3])
             if meas[3] != pert[3]:
                 raise ValueError('Mismatched station IDs!')
             full = np.append(full, pert[3])
             y.append(full)
-            print(f'{full=}')
         y_k[t_idx] = y
 
     return x_k, y_k
 
 
-def prop_pert(dx0: np.ndarray, x_nom: np.ndarray, x_pert: np.ndarray,
+def prop_pert(dx0: np.ndarray, x_nom: np.ndarray, station_ids_list: List,
               du_k: np.ndarray, dt: float,
               mu: float) -> Tuple[np.ndarray, List[List]]:
     """Propogate perturbations through linearized dynamics.
@@ -133,16 +136,12 @@ def prop_pert(dx0: np.ndarray, x_nom: np.ndarray, x_pert: np.ndarray,
     dx_k[0, :] = dx0
     dy_k = [[] for i in range(np.size(x_nom, 0))]
 
-    for t_idx, (x, x_p) in enumerate(zip(x_nom, x_pert)):
+    for t_idx, (x, station_ids) in enumerate(zip(x_nom, station_ids_list)):
         dx = dx_k[t_idx, :]
         du = du_k[t_idx, :]
 
         # Current time
         t = dt * t_idx
-
-        # check which ground stations are in view based on current NL perturbed
-        # state
-        station_ids = problem_setup.find_visible_stations(x_p, t)
 
         # calc time step using nominal trajectory
         F, G, Oh, H, M = calc_dt_jacobians(x, mu, dt, t, station_ids)

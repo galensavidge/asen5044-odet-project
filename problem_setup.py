@@ -80,6 +80,15 @@ def get_measurements(x: np.ndarray, time: float,
 
 
 def find_visible_stations(x: np.ndarray, time: float):
+    """Checks what ground stations are visible at a state and time.
+
+    Args:
+        x: Satellite state vector
+        time: Simulation time
+
+    Returns:
+        List of zero-indexed station IDs that are in view
+    """
     station_ids = []
     for ii in range(12):
         if check_ground_station_visibility(ii, time, x[0], x[2]):
@@ -88,7 +97,8 @@ def find_visible_stations(x: np.ndarray, time: float):
     return station_ids
 
 
-def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> List:
+def states_to_meas(x_k: np.ndarray, time: np.ndarray,
+                   station_ids_list: List) -> List:
     """Converts series of state vectors to measurement vectors.
 
     Args:
@@ -103,9 +113,8 @@ def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> List:
     """
 
     y_k = [[] for i in time]
-    for idx, t in enumerate(time):
-        station_ids = find_visible_stations(x_k[idx, :], time[idx])
-        y_k[idx] = get_measurements(x_k[idx, :], time[idx], station_ids)
+    for idx, (t, station_ids) in enumerate(zip(time, station_ids_list)):
+        y_k[idx] = get_measurements(x_k[idx, :], t, station_ids)
 
     return y_k
 
