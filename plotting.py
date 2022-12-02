@@ -34,7 +34,7 @@ def states(x_k: np.ndarray,
     # add labels
     for ax in axs:
         ax.set(xlim=[t[0], t[-1]], xlabel='Time [s]')
-        ax.grid()
+        ax.grid(visible=True)
 
         if legend_label:
             ax.legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
@@ -99,7 +99,7 @@ def measurements(y_k: np.ndarray,
     # add labels
     for ax in axs:
         ax.set(xlim=[t[0], t[-1]], xlabel='Time [s]')
-        ax.grid()
+        ax.grid(visible=True)
 
     if legend_label:
         axs[0].legend(bbox_to_anchor=(1.04, 0.5), loc="center left")

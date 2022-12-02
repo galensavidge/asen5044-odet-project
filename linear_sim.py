@@ -23,8 +23,6 @@ def main():
     u_k = np.zeros((np.size(t),2))
     
     dx_k,dy_k = prop_pert(dx0,x_k,u_k,op.dt,problem_setup.MU_EARTH)
-    # TAKE THIS OUT WHEN THIS IS FIXED
-    # dx_k = np.transpose(dx_k)
 
     # prop nonlinear perturbations
     _,x_k_pert = nonlinear_sim.integrate_nl_ct_eom(op.x0 + dx0, np.arange(0, op.T0, op.dt))
@@ -141,4 +139,3 @@ if __name__ == "__main__":
 
 
 # TODO: C/H matrices, need access to which station is in sight and its location
-# TODO: fix x_k transposes. make nonlinear output the right size matrix
