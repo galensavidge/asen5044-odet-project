@@ -68,6 +68,18 @@ def a_posteriori_covariance(Pm: np.ndarray, H: np.ndarray, R: np.ndarray,
     return M @ Pm @ M.T + K @ R @ K.T
 
 
+def innovation_covariance_matrix(Pm: np.ndarray, H: np.ndarray,
+                                 R: np.ndarray) -> np.ndarray:
+    """Finds the "innovation" covariance matrix needed for the NIS test.
+
+    Args:
+        Pm: A priori estimation error covariance matrix at time k
+        H: Output matrix at time k
+        R: Measurement noise covariance matrix at time k
+    """
+    return H @ Pm @ H.T + R
+
+
 def kf_iteration(x: np.ndarray, u: np.ndarray, P: np.ndarray, y: np.ndarray,
                  F: np.ndarray, G: np.ndarray, H: np.ndarray, Q: np.ndarray,
                  R: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -93,5 +105,6 @@ def kf_iteration(x: np.ndarray, u: np.ndarray, P: np.ndarray, y: np.ndarray,
     xm = a_priori_state(x, u, F, G)
     xp = a_posteriori_state(xm, y, H, K)
     Pp = a_posteriori_covariance(Pm, H, R, K)
+    S = innovation_covariance_matrix(Pm, H, R)
 
-    return xp, Pp
+    return xp, Pp, S

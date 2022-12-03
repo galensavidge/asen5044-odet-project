@@ -168,6 +168,17 @@ def sample_noisy_measurements(x: np.ndarray, time: float,
     return y_stack
 
 
+def states_to_noisy_meas(x_k: np.ndarray, time: np.ndarray,
+                         station_ids_list: List,
+                         noise_covariance: np.ndarray) -> List:
+    y_k = [[] for i in time]
+    for idx, (t, station_ids) in enumerate(zip(time, station_ids_list)):
+        y_k[idx] = sample_noisy_measurements(x_k[idx, :], t, station_ids,
+                                             noise_covariance)
+
+    return y_k
+
+
 @dataclasses.dataclass
 class OdetProblem:
     """Contains parameters for the ODet estimation problem."""
@@ -184,5 +195,9 @@ class OdetProblem:
     # Time between measurements
     dt: float = 10  # [sec]
 
+    # Measurement noise covariance
+    R: np.ndarray = None
+
     def __init__(self) -> None:
         self.x0 = [self.r0, 0, 0, self.v0]
+        self.R = np.ndarray([[0.01, 0, 0], [0, 1, 0], [0, 0, 0.01]])
