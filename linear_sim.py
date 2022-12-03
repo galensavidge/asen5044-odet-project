@@ -34,49 +34,64 @@ def main():
     dx_k_nl = x_k_pert_nl - x_k
 
     # full perturbed solution
-    x_k_pert,y_k_pert = pert_sol(x_k,y_k,dx_k,dy_k)
+    x_k_pert,y_k_pert = pert_sol(x_k,dx_k,dy_k,op.dt)
 
-    fig,axs= plt.subplots(4,1)
-    plotting.states(dx_k,t,axs,'Linearized')
+    # fig,axs= plt.subplots(4,1)
+    # plotting.states(dx_k,t,axs,'Linearized')
     # plotting.states(dx_k_nl,t,axs,'Nonlinear')
-    fig.suptitle('Linearized Sim State Perturbations')
-    fig.tight_layout()
+    # fig.suptitle('Linearized Sim State Perturbations')
+    # fig.tight_layout()
 
-    fig2,axs2= plt.subplots(4,1)
-    plotting.states(x_k_pert,t,axs2,'Linearized w/ pert')
+    # fig2,axs2= plt.subplots(4,1)
+    # plotting.states(x_k_pert,t,axs2,'Linearized w/ pert')
     # plotting.states(x_k,t,axs2,'Nominal')
     # plotting.states(x_k_pert_nl,t,axs2,'Nonlinear w/ pert')
-    fig2.suptitle('Linearized Sim State')
-    fig2.tight_layout()
+    # fig2.suptitle('Linearized Sim State')
+    # fig2.tight_layout()
 
     fig3,axs3 = plt.subplots(4,1)
+    # plotting.measurements_withids(y_k, t, axs3,'Nonimal',color='k')
+    plotting.measurements_withids(y_k_pert_nl,t,axs3,'Nonlinear w/ pert',color='k')
     plotting.measurements_withids(y_k_pert, t, axs3,'Linearized w/ Pert')
-    plotting.measurements_withids(y_k, t, axs3,'Nonimal','x')
-    plotting.measurements_withids(y_k_pert_nl,t,axs3,'Nonlinear w/ pert','^')
     fig3.suptitle('Linearized Sim Measurements')
     fig3.tight_layout()
 
-    fig4,axs4 = plt.subplots(4,1)
-    plotting.measurements_withids(dy_k,t,axs4)
-    fig4.suptitle('Linearized Sim Measurement Perturbations')
-    fig4.tight_layout()
+    # fig4,axs4 = plt.subplots(4,1)
+    # plotting.measurements_withids(dy_k,t,axs4)
+    # fig4.suptitle('Linearized Sim Measurement Perturbations')
+    # fig4.tight_layout()
 
     plt.show()
 
-def pert_sol(x_k_nom: np.ndarray, y_k_nom: List, dx_k: np.ndarray, dy_k: List) -> Tuple[np.ndarray,List]:
-    """Add the linearized perturbations to the nominal state to get the full perturbed solution."""
+def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, dy_k: List,dt: float) -> Tuple[np.ndarray,List]:
+    """Add the linearized perturbations to the nominal state to get the full perturbed solution.
+    
+    For measurements, it uses the perturbed solution to assess which ground stations are in view.
+    """
 
     x_k = x_k_nom + dx_k
-    y_k = [[] for i in y_k_nom]
-    for t_idx,y_nom in enumerate(y_k_nom):
-        y = []
+
+    y_k = [[] for i in x_k_nom]
+    for t_idx,x in enumerate(x_k):
+
+        # use perturbed sol to check ground stations in view
+        station_ids = [False for i in range(12)]
+        for ii in range(12):
+            if problem_setup.check_ground_station_visibility(ii,dt*t_idx,x[0],x[2]):
+                station_ids[ii] = True
+        
+        # get nominal measurements for each of the ground stations in view of the perturbed state
+        y_nom = problem_setup.get_measurements(x_k_nom[t_idx],t_idx*dt,station_ids)
+
+        # add perturbation to get perturbed measurements
         dy = dy_k[t_idx]
         for idx,meas in enumerate(y_nom):
+            y = []
             pert = dy[idx]
             full = np.array(meas[0:3]) + np.array(pert[0:3])
             if meas[3] != pert[3]:
                 raise ValueError('Mismatched station IDs!')
-            full = np.append(full,meas[3])
+            full = np.append(full,pert[3])
             y.append(full)
         y_k[t_idx] = y
 
@@ -101,33 +116,34 @@ def prop_pert(dx0:np.ndarray,x_nom:np.ndarray,du_k:np.ndarray,dt:float,mu:float)
     dx_k = np.zeros(np.shape(x_nom))
     dx_k[0,:] = dx0
     dy_k = [[] for i in range(np.size(x_nom,0))]
-    # dy_k = np.zeros((np.size(x_nom,0),3))
 
     for t_idx,x in enumerate(x_nom):
         dx = dx_k[t_idx,:]
         du = du_k[t_idx,:]
 
-        # check which ground stations are in view based on nominal state
+        # check which ground stations are in view based on current perturbed state
+        x_pert = x + dx_k[t_idx]
         station_ids = [False for i in range(12)]
         for ii in range(12):
-            if problem_setup.check_ground_station_visibility(ii,dt*t_idx,x[0],x[2]):
+            if problem_setup.check_ground_station_visibility(ii,dt*t_idx,x_pert[0],x_pert[2]):
                 station_ids[ii] = True
 
         # calc time step using nominal trajectory
         F,G,Oh,H,M = calc_dt_jacobians(x,mu,dt,dt*t_idx,station_ids)
 
-        # save state perturbation propogation
+        # save state perturbation propogation to the next time step
         if t_idx != np.size(x_nom,0) -1:
             dx_k[t_idx+1,:] = np.matmul(F,dx) + np.matmul(G,du)
 
-        # save measurement pert prop and id
-        dy = np.matmul(H,dx) + np.matmul(M,du)
+        # save measurement pert prop and id only if a ground station is in view
         dy_id = []
-        idx = 0
-        for id_idx,in_view in enumerate(station_ids):
-            if in_view:
-                dy_id.append([dy[idx * 3], dy[idx * 3 + 1],dy[idx * 3 + 2], id_idx + 1])
-                idx += 1
+        if H is not None:
+            dy = np.matmul(H,dx) + np.matmul(M,du)
+            idx = 0
+            for id_idx,in_view in enumerate(station_ids):
+                if in_view:
+                    dy_id.append([dy[idx * 3], dy[idx * 3 + 1],dy[idx * 3 + 2], id_idx + 1])
+                    idx += 1
         dy_k[t_idx] = dy_id
 
     return dx_k,dy_k
@@ -174,8 +190,8 @@ def calc_ct_jacobians(x: np.ndarray,t:float, mu:float, station_ids: List[bool]) 
         A: 4x4 array, dynamics Jacobian
         B: 4x2 array, input Jacobian
         Gam: 4X2 array, process noise Jacobian
-        C: 3x4 array, output Jacobian
-        D: 3x2 array, feedthrough Jacobian
+        C: 3*GSx4 array, output Jacobian (GS is number of ground stations in view), = None if none are in view
+        D: 3*GSx2 array, feedthrough Jacobian (GS is number of ground stations in view), = None if none are in view
     """
 
     X, Xdot, Y, Ydot = x
@@ -185,6 +201,7 @@ def calc_ct_jacobians(x: np.ndarray,t:float, mu:float, station_ids: List[bool]) 
     Gam = np.array([[0,0],[1,0],[0,0],[0,1]])
 
     C = None
+    D = None
     for idx,in_view in enumerate(station_ids):
 
         if not in_view: 
@@ -197,14 +214,15 @@ def calc_ct_jacobians(x: np.ndarray,t:float, mu:float, station_ids: List[bool]) 
         # create C for this ground station and stack in total C
         rho = np.sqrt((X - Xi)**2 + (Y - Yi)**2)
         rhodot = ((X - Xi) * (Xdot - Xdoti) + (Y - Yi) * (Ydot - Ydoti)) / rho
-        Cii = np.array([[(X-Xi)/rho,0,(Y-Yi)/rho,0],[(Xdot-Xdoti)/rho - (X-Xi)*rhodot/rho**2,(X-Xi)/rho,(Xdot-Xdoti)/rho - (Y-Yi)*rhodot/rho**2,(Y-Yi)/rho],[-(Y-Yi)/rho**2,0,(X-Xi)/rho**2,0]])
+        Cii = np.array([[(X-Xi)/rho,0,(Y-Yi)/rho,0],[(Xdot-Xdoti)/rho - (X-Xi)*rhodot/rho**2,(X-Xi)/rho,(Ydot-Ydoti)/rho - (Y-Yi)*rhodot/rho**2,(Y-Yi)/rho],[-(Y-Yi)/rho**2,0,(X-Xi)/rho**2,0]])
 
         if C is None:
             C = Cii
         else:
             C = np.vstack((C,Cii))
 
-    D = np.zeros((np.size(C,0),2))
+    if C is not None:
+        D = np.zeros((np.size(C,0),2))
 
     return A,B,Gam,C,D
 
@@ -214,4 +232,5 @@ if __name__ == "__main__":
 
 
 
-# TODO: y pert doesn't look like his and nom state isn't either
+# TODO: y pert doesn't look like his
+# current, this looks at the perturbed state to check if the ground station is in view and then calcs the measurement vectors for those ground stations. It cuts off too early (compared to Dr. Ahmeds results) for some of the states, specifically the ones with a lot of state perturbation.

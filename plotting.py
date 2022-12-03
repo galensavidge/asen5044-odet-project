@@ -111,7 +111,7 @@ def states(x_k: np.ndarray,
 def measurements_withids(y_k: List,
                  t: np.ndarray,
                  axs: List[matplotlib.axes.Axes],
-                 legend_label: str = '',marker_style = '.'):
+                 legend_label: str = '',marker_style = '.',color = None):
     """Plot measurements and station IDs on 4 subplots.
 
     Args:
@@ -120,6 +120,7 @@ def measurements_withids(y_k: List,
         axs: list of 4 matplotlib Axes objects to plot on
         legend_label: optional string to use for legend
         marker_style: optional string to use for plot marker style
+        color: optional string for the color of ALL the points
     """
 
     # separate measurments into arrays per station id
@@ -137,9 +138,12 @@ def measurements_withids(y_k: List,
             y_id[station_id - 1, t_idx, :] = meas[0:3]
 
     # give each station id a color
-    prop_cycle = plt.rcParams['axes.prop_cycle']
-    tab_colors = prop_cycle.by_key()['color']
-    id_colors = tab_colors + ['maroon', 'indigo']
+    if color:
+        id_colors = [color for i in range(12)]
+    else:
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        tab_colors = prop_cycle.by_key()['color']
+        id_colors = tab_colors + ['maroon', 'indigo']
 
     # plot per station id
     ms = 10

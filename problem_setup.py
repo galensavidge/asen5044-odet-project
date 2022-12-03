@@ -13,18 +13,29 @@ OMEGA_EARTH = 2 * np.pi / 86400.  # [rad/sec]
 
 
 def ground_station_position(station_id: int, time: float):
-    """Returns the Cartesian position of a ground station."""
+    """Returns the Cartesian position of a ground station.
+    
+    Args:
+        station_id: xero-indexed
+    """
     theta = OMEGA_EARTH * time + station_id * np.pi / 6
     return R_EARTH * np.array([np.cos(theta), np.sin(theta)])
 
 
 def ground_station_velocity(station_id: int, time: float):
-    """Returns the Cartesian velocity of a ground station."""
+    """Returns the Cartesian velocity of a ground station.
+    Args:
+        station_id: xero-indexed
+    """
     theta = OMEGA_EARTH * time + station_id * np.pi / 6
     return R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
 
 def check_ground_station_visibility(station_id: int, time: float, X: float, Y: float) -> bool:
-    """Returns if satellite is within range of ground station."""
+    """Returns if satellite is within range of ground station.
+    
+    Args:
+        station_id: xero-indexed
+    """
     
     Xi, Yi = ground_station_position(station_id, time)
     theta = OMEGA_EARTH * time + station_id * np.pi / 6
@@ -37,12 +48,13 @@ def check_ground_station_visibility(station_id: int, time: float, X: float, Y: f
     return False
 
 
-def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
-    """Calculates measurements for all ground stations at a specific time.
+def get_measurements(x: np.ndarray, time: float,station_ids: List) -> np.ndarray:
+    """Calculates measurements for ground stations in view at a specific time.
 
     Args:
         x: Satellite state vector
         time: Simulation time
+        station_ds: list of booleans specifying which stations are in view
 
     Returns:
         A list of measurements in the form:
@@ -50,9 +62,10 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     """
     X, Xdot, Y, Ydot = x
     measurements = []
-    for ii in range(12):
-        
-        if not check_ground_station_visibility(ii,time,X,Y):
+
+    for ii,in_view in enumerate(station_ids):
+
+        if not in_view: 
             continue
 
         Xi, Yi = ground_station_position(ii, time)
@@ -79,8 +92,14 @@ def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> List:
     """
 
     y_k = [[] for i in time]
-    for idx in range(np.size(time)):
-        y_k[idx] = get_measurements(x_k[idx,:], time[idx])
+    for idx,t in enumerate(time):
+        
+        station_ids = [False for i in range(12)]
+        for ii in range(12):
+            if check_ground_station_visibility(ii,t,x_k[idx,0],x_k[idx,2]):
+                station_ids[ii] = True
+
+        y_k[idx] = get_measurements(x_k[idx,:], time[idx],station_ids)
     return y_k
 
 def form_stacked_meas_vecs(y_k: np.ndarray) -> List:
