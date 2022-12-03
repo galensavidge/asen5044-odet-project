@@ -30,7 +30,6 @@ def ground_station_velocity(station_id: int, time: float):
     theta = OMEGA_EARTH * time + station_id * np.pi / 6
     return R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
 
-<<<<<<< HEAD
 def check_ground_station_visibility(station_id: int, time: float, X: float, Y: float) -> bool:
     """Returns if satellite is within range of ground station.
     
@@ -38,13 +37,6 @@ def check_ground_station_visibility(station_id: int, time: float, X: float, Y: f
         station_id: xero-indexed
     """
     
-=======
-
-def check_ground_station_visibility(station_id: int, time: float, X: float,
-                                    Y: float) -> bool:
-    """Returns if satellite is within range of ground station."""
-
->>>>>>> c474fa4c424b01991fb81b66009f2a5667d2aad2
     Xi, Yi = ground_station_position(station_id, time)
     theta = OMEGA_EARTH * time + station_id * np.pi / 6
     phi = np.arctan2(Y - Yi, X - Xi)
@@ -70,16 +62,10 @@ def get_measurements(x: np.ndarray, time: float,station_ids: List) -> np.ndarray
     """
     X, Xdot, Y, Ydot = x
     measurements = []
-<<<<<<< HEAD
 
     for ii,in_view in enumerate(station_ids):
 
         if not in_view: 
-=======
-    for ii in range(12):
-
-        if not check_ground_station_visibility(ii, time, X, Y):
->>>>>>> c474fa4c424b01991fb81b66009f2a5667d2aad2
             continue
 
         Xi, Yi = ground_station_position(ii, time)
@@ -109,7 +95,6 @@ def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> List:
     """
 
     y_k = [[] for i in time]
-<<<<<<< HEAD
     for idx,t in enumerate(time):
         
         station_ids = [False for i in range(12)]
@@ -118,10 +103,6 @@ def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> List:
                 station_ids[ii] = True
 
         y_k[idx] = get_measurements(x_k[idx,:], time[idx],station_ids)
-=======
-    for idx in range(np.size(time)):
-        y_k[idx] = get_measurements(x_k[idx, :], time[idx])
->>>>>>> c474fa4c424b01991fb81b66009f2a5667d2aad2
     return y_k
 
 
