@@ -1,5 +1,7 @@
 import dataclasses
 
+from typing import List
+
 import numpy as np
 
 import util
@@ -21,6 +23,19 @@ def ground_station_velocity(station_id: int, time: float):
     theta = OMEGA_EARTH * time + station_id * np.pi / 6
     return R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
 
+def check_ground_station_visibility(station_id: int, time: float, X: float, Y: float) -> bool:
+    """Returns if satellite is within range of ground station."""
+    
+    Xi, Yi = ground_station_position(station_id, time)
+    theta = OMEGA_EARTH * time + station_id * np.pi / 6
+    phi = np.arctan2(Y - Yi, X - Xi)
+
+    # Check if the satellite is in view of this station
+    ang_diff = util.wrap_angle_negpi_pi(phi - theta)
+    if np.abs(ang_diff) < np.pi / 2:
+        return True
+    return False
+
 
 def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     """Calculates measurements for all ground stations at a specific time.
@@ -36,16 +51,13 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     X, Xdot, Y, Ydot = x
     measurements = []
     for ii in range(12):
-        theta = OMEGA_EARTH * time + ii * np.pi / 6
+        
+        if not check_ground_station_visibility(ii,time,X,Y):
+            continue
+
         Xi, Yi = ground_station_position(ii, time)
         Xdoti, Ydoti = ground_station_velocity(ii, time)
-
         phi = np.arctan2(Y - Yi, X - Xi)
-
-        # Check if the satellite is in view of this station
-        ang_diff = util.wrap_angle_negpi_pi(phi - theta)
-        if not np.abs(ang_diff) < np.pi / 2:
-            continue
 
         rho = np.sqrt((X - Xi)**2 + (Y - Yi)**2)
         rhodot = ((X - Xi) * (Xdot - Xdoti) + (Y - Yi) * (Ydot - Ydoti)) / rho
@@ -55,7 +67,7 @@ def get_measurements(x: np.ndarray, time: float) -> np.ndarray:
     return np.array(measurements)
 
 
-def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> np.ndarray:
+def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> List:
     """Converts series of state vectors to measurement vectors.
 
     Args:
@@ -63,14 +75,34 @@ def states_to_meas(x_k: np.ndarray, time: np.ndarray) -> np.ndarray:
         time: array of length T of time at each time step
 
     Returns:
-        y_k: 2d array of outputs, first  dimension length of T, second
-        dimension length varies according to number of ground stations in view
+        y_k: 3d array of outputs, first  dimension is time steps, second dimension holds measurement vectors for each ground station in view, third dimension are the measurements in form of [rho,rhodot,phi,id]
     """
 
     y_k = [[] for i in time]
     for idx in range(np.size(time)):
         y_k[idx] = get_measurements(x_k[idx,:], time[idx])
     return y_k
+
+def form_stacked_meas_vecs(y_k: np.ndarray) -> List:
+    """Converts 3d array of measurement vectors to 2d array of stacked vectors.
+    
+    Args:
+        y_k: 3d array of outputs, first  dimension is time steps, second dimension holds measurement vectors for each ground station in view, third dimension are the measurements in form of [rho,rhodot,phi,id] (output of states_to_meas)
+
+    Returns:
+        y_k_stack: 2d list of ouptuts, first dimension is time steps, second dimension is a stacked vector of measurements 
+    """
+    y_k_stack = [[] for i in range(np.size(y_k,0))]
+
+    for t_idx, y in enumerate(y_k):
+        y_stack = []
+        for meas in y:
+            y_stack.extend(meas[0:3])
+        y_k_stack[t_idx] = y_stack
+    
+    return y_k_stack
+
+
 
 
 @dataclasses.dataclass

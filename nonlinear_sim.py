@@ -26,7 +26,7 @@ def main():
     y_k = problem_setup.states_to_meas(x_k, t)
 
     fig2, axs2 = plt.subplots(4, 1)
-    plotting.measurements(y_k, t, axs2)
+    plotting.measurements_withids(y_k, t, axs2)
     fig2.suptitle('Nonlinear Sim Measurements')
     fig2.tight_layout()
 
@@ -48,8 +48,8 @@ def integrate_nl_ct_eom(x0: np.ndarray,
                                    t_span=(t_points[0], t_points[-1]),
                                    t_eval=t_points,
                                    y0=x0,
-                                   rtol=1e-9,
-                                   atol=1e-9)
+                                   rtol=1e-12,
+                                   atol=1e-12)
 
     return solution.t, np.transpose(solution.y)
 
