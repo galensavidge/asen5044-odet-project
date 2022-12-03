@@ -173,17 +173,22 @@ def states_to_noisy_meas(x_k: np.ndarray, time: np.ndarray,
                          noise_covariance: np.ndarray) -> List:
     y_k = [[] for i in time]
     for idx, (t, station_ids) in enumerate(zip(time, station_ids_list)):
-        y_k[idx] = sample_noisy_measurements(x_k[idx, :], t, station_ids,noise_covariance)
+        y_k[idx] = sample_noisy_measurements(x_k[idx, :], t, station_ids,
+                                             noise_covariance)
 
     return y_k
 
 
-def form_process_noise(T: float, cov: np.ndarray):
+def form_process_noise(T: int, cov: np.ndarray):
     """Form Tx2 vector of process noise with covariance matrix cov."""
     w = np.zeros((T, 2))
     for t_idx in range(T):
         w[t_idx, :] = util.sample_random_vec(np.zeros(2), cov)
     return w
+
+
+def form_zero_process_noise(T: int) -> np.ndarray:
+    return np.zeros(T, 2)
 
 
 @dataclasses.dataclass

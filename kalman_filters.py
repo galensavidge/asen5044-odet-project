@@ -80,8 +80,22 @@ def innovation_covariance_matrix(Pm: np.ndarray, H: np.ndarray,
     return H @ Pm @ H.T + R
 
 
+def a_priori_measurement(xm: np.ndarray, H: np.ndarray, u: np.ndarray,
+                         M: np.ndarray) -> np.ndarray:
+    """Finds the estimated measurement needed for the NIS test.
+
+    Args:
+        xm: A priori state estimate at time k
+        H: Output matrix at time k
+        u: Control at time k
+        M: Control to output mapping matrix at time k
+    """
+    return H @ xm + M @ u
+
+
 def kf_iteration(x: np.ndarray, u: np.ndarray, P: np.ndarray, y: np.ndarray,
-                 F: np.ndarray, G: np.ndarray, H: np.ndarray, Q: np.ndarray,
+                 F: np.ndarray, G: np.ndarray, H: np.ndarray, M: np.ndarray,
+                 Q: np.ndarray,
                  R: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """Runs one iteration of the linear Kalman filter (KF).
 
@@ -103,8 +117,9 @@ def kf_iteration(x: np.ndarray, u: np.ndarray, P: np.ndarray, y: np.ndarray,
     Pm = a_priori_covariance(P, F, Q)
     K = kalman_gain(Pm, H, R)
     xm = a_priori_state(x, u, F, G)
+    ym = a_priori_measurement(xm, H, u, M)
     xp = a_posteriori_state(xm, y, H, K)
     Pp = a_posteriori_covariance(Pm, H, R, K)
     S = innovation_covariance_matrix(Pm, H, R)
 
-    return xp, Pp, S
+    return xp, ym, Pp, S
