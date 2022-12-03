@@ -49,68 +49,6 @@ def states(x_k: np.ndarray,
     axs[3].set(ylabel='Ydot [km/s]')
 
 
-# def measurements(y_k: List,
-#                  t: np.ndarray,
-#                  axs: List[matplotlib.axes.Axes],
-#                  legend_label: str = '',line_style = '-'):
-#     """Plot measurements on 3 subplots.
-
-#     Args:
-#         y_k: 2d array of measurements at each time step
-#         t: array of length T, times
-#         axs: list of matplotlib Axes objects to plot on
-#         legend_label: optional string to use for legend
-#         line_style: optional string to use for plot line style
-#     """
-
-#     # seperate measurements into arrays for each element
-#     # 2d arrays: first dim is time, second is to store multiple measurement
-#     values
-#     rho = np.full((np.size(t),1),np.nan)
-#     rho_dot = np.full((np.size(t),1),np.nan)
-#     phi = np.full((np.size(t),1),np.nan)
-#     max_num_meas = 1
-#     for t_idx,y in enumerate(y_k):
-
-#         # check how many measurements are in this time step
-#         if len(y) != 0 and len(y) % 3 != 0:
-#             raise ValueError('Measurement vector does not have multiples of
-#             three elements.')
-#         num_meas = int(len(y) / 3)
-
-#         # if this is the most so far, adjust the meas arrays sizes
-#         if num_meas > max_num_meas:
-#             max_num_meas = num_meas
-#             rho = np.hstack((rho,np.full((np.size(t),1),np.nan)))
-#             rho_dot = np.hstack((rho_dot,np.full((np.size(t),1),np.nan)))
-#             phi = np.hstack((phi,np.full((np.size(t),1),np.nan)))
-
-#         # add elements to meas arrays
-#         for idx in range(num_meas):
-#             print(f'{num_meas=},{idx=},{y=}')
-#             rho[t_idx,idx] = y[idx*3]
-#             rho_dot[t_idx,idx] = y[idx*3+1]
-#             phi[t_idx,idx] = y[idx*3+2]
-
-#     # plot values
-#     for idx in range(max_num_meas):
-#         axs[0].scatter(t,rho[:,idx],label=legend_label)
-#         axs[1].scatter(t,rho_dot[:,idx],label=legend_label)
-#         axs[2].scatter(t,phi[:,idx],label=legend_label)
-
-#     # add labels
-#     for ax in axs:
-#         ax.set(xlim=[t[0], t[-1]], xlabel='Time [s]')
-#         ax.grid(visible=True)
-
-#     if legend_label:
-#         axs[0].legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
-
-#     axs[0].set(ylabel='rho [km]')
-#     axs[1].set(ylabel='rho_dot [km/s]')
-#     axs[2].set(ylabel='phi [rad]')
-
-
 def measurements_withids(y_k: List,
                          t: np.ndarray,
                          axs: List[matplotlib.axes.Axes],
@@ -197,3 +135,49 @@ def measurements_withids(y_k: List,
     axs[1].set(ylabel='rho_dot [km/s]')
     axs[2].set(ylabel='phi [rad]')
     axs[3].set(ylabel='Visible Station ID')
+
+
+def plot_nees_test(ax: matplotlib.axes.Axes, nees: np.ndarray,
+                   time: np.ndarray, r1: float, r2: float):
+    """Plot NEES test results.
+
+    Args:
+        axs: matplotlib Axes object to plot on
+        time: array of length T, times
+        nees: array of normalized squared state error values averaged over all
+            the simulations
+        r1: upper error bound according to alpha
+        r2: lower error bound according to alpha
+    """
+
+    ax.scatter(time, nees)
+    ax.plot(time, r1 * np.ones(np.size(time)), 'k--', label='r_1 bound')
+    ax.plot(time, r2 * np.ones(np.size(time)), 'k--', label='r_2 bound')
+    ax.set(xlabel='Time [s]',
+           ylabel='NEES Statistic',
+           title='NEES Estimation Results')
+    ax.set(xlim=[time[0], time[-1]])
+    ax.legend()
+
+
+def plot_nis_test(ax: matplotlib.axes.Axes, nis: np.ndarray, time: np.ndarray,
+                  r1: float, r2: float):
+    """Plot NIS test results.
+
+    Args:
+        axs: matplotlib Axes object to plot on
+        time: array of length T, times
+        nis: array of normalized squared measurement residual values averaged
+            over all the simulations
+        r1: upper error bound according to alpha
+        r2: lower error bound according to alpha
+    """
+
+    ax.scatter(time, nis)
+    ax.plot(time, r1 * np.ones(np.size(time)), 'k--', label='r_1 bound')
+    ax.plot(time, r2 * np.ones(np.size(time)), 'k--', label='r_2 bound')
+    ax.set(xlabel='Time [s]',
+           ylabel='NIS Statistic',
+           title='NIS Estimation Results')
+    ax.set(xlim=[time[0], time[-1]])
+    ax.legend()
