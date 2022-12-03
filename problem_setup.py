@@ -75,7 +75,7 @@ def get_measurements(x: np.ndarray, time: float,
         rho = np.sqrt((X - Xi)**2 + (Y - Yi)**2)
         rhodot = ((X - Xi) * (Xdot - Xdoti) + (Y - Yi) * (Ydot - Ydoti)) / rho
 
-        measurements.append([rho, rhodot, phi, ii + 1])
+        measurements.append([rho, rhodot, phi, ii])
 
     return np.array(measurements)
 
@@ -163,7 +163,7 @@ def sample_noisy_measurements(x: np.ndarray, time: float,
     y_stack = get_measurements(x, time, station_ids)
 
     for y in y_stack:
-        y[1:3] += util.sample_random_vec(np.zeros(3), noise_covariance)
+        y[0:3] += util.sample_random_vec(np.zeros(3), noise_covariance)
 
     return y_stack
 
@@ -200,4 +200,4 @@ class OdetProblem:
 
     def __init__(self) -> None:
         self.x0 = [self.r0, 0, 0, self.v0]
-        self.R = np.ndarray([[0.01, 0, 0], [0, 1, 0], [0, 0, 0.01]])
+        self.R = np.array([[0.01, 0, 0], [0, 1, 0], [0, 0, 0.01]])

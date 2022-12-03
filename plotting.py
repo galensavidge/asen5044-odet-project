@@ -182,33 +182,51 @@ def plot_nis_test(ax: matplotlib.axes.Axes, nis: np.ndarray, time: np.ndarray,
     ax.set(xlim=[time[0], time[-1]])
     ax.legend()
 
-def plot_2sig_err(axs: List[matplotlib.axes.Axes],err_k: np.ndarray, time:np.ndarray,err_cov_k: np.ndarray,legend_label: str = ''):
+
+def plot_2sig_err(axs: List[matplotlib.axes.Axes],
+                  err_k: np.ndarray,
+                  time: np.ndarray,
+                  err_cov_k: np.ndarray,
+                  legend_label: str = ''):
     """Plot state error and 2sigma bounds.
-    
+
     Args:
         axs: list of 4 matplotlib Axes object to plot on
         err_k: Tx4 array of state errors at each time step
-        time: array of length T, times   
+        time: array of length T, times
         err_cov_k: Tx4x4 array of state error covariance matrices
         legend_label: optional string to use for legend
     """
 
     # get 2 sigma errors
-    sig_k = np.zeros(np.size(err_k))
+    n = np.size(err_k[0])
+    sig_k = np.zeros_like(err_k)
     for t_idk, err_cov in enumerate(err_cov_k):
-        for s_idx in range(np.size(err_cov,1)):
-            sig_k[t_idk,s_idx] = (err_cov[s_idx,s_idx]**0.5)*2
+        for s_idx in range(n):
+            sig_k[t_idk, s_idx] = (err_cov[s_idx, s_idx]**0.5) * 2
 
     # plot
-    state_labels = ['dX [km]','dXdot [km/s]','dY [km]','dYdot[km]']
-    state_colors = ['tab:blue','tab:orange','tab:green','tab:red']
-    for idx,ax in enumerate(axs):
-        ax.plot(time,err_k[:,idx],color=state_colors[idx],label='Error'+legend_label)
-        ax.plot(time,sig_k[:,idx],'--',color=state_colors[idx],label='2 Sigma'+legend_label)
-        ax.plot(time,-sig_k[:,idx],'--',color=state_colors[idx],label='_nolegend_')
+    state_labels = ['dX [km]', 'dXdot [km/s]', 'dY [km]', 'dYdot[km]']
+    state_colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
+    for idx, ax in enumerate(axs):
+        ax.plot(time,
+                err_k[:, idx],
+                color=state_colors[idx],
+                label='Error' + legend_label)
+        ax.plot(time,
+                sig_k[:, idx],
+                '--',
+                color=state_colors[idx],
+                label='2 Sigma' + legend_label)
+        ax.plot(time,
+                -sig_k[:, idx],
+                '--',
+                color=state_colors[idx],
+                label='_nolegend_')
 
-        ax.set(xlim=[time[0],time[-1]],xlabel='Time [s]',ylabel=state_labels[idx],title=state_labels[idx] + ' State Error')
+        ax.set(xlim=[time[0], time[-1]],
+               xlabel='Time [s]',
+               ylabel=state_labels[idx],
+               title=state_labels[idx] + ' State Error')
         ax.legend()
         ax.grid()
-
-
