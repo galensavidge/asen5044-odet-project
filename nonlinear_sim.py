@@ -45,7 +45,9 @@ def example_sim_nonoise():
 def example_sim_wnoise():
     # nonlinear states
     op = problem_setup.OdetProblem()
-    w = np.random.randn(int(np.floor(op.T0 / op.dt)), 2) * 1e-5
+    process_cov = np.eye(2) * 1e-10
+    w = problem_setup.form_process_noise(int(np.floor(op.T0 / op.dt)),
+                                         process_cov)
     t, x_k = integrate_nl_ct_eom(op.x0, op.dt, op.T0, w)
 
     fig, axs = plt.subplots(4, 1)

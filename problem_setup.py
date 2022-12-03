@@ -179,6 +179,14 @@ def states_to_noisy_meas(x_k: np.ndarray, time: np.ndarray,
     return y_k
 
 
+def form_process_noise(T: float, cov: np.ndarray):
+    """Form Tx2 vector of process noise with covariance matrix cov."""
+    w = np.zeros((T, 2))
+    for t_idx in range(T):
+        w[t_idx, :] = util.sample_random_vec(np.zeros(2), cov)
+    return w
+
+
 @dataclasses.dataclass
 class OdetProblem:
     """Contains parameters for the ODet estimation problem."""
