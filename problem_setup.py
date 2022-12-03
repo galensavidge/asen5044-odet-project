@@ -144,6 +144,30 @@ def form_stacked_meas_vecs(y_k: np.ndarray) -> List:
     return y_k_stack
 
 
+def sample_noisy_measurements(x: np.ndarray, time: float,
+                              station_ids: np.ndarray,
+                              noise_covariance: np.ndarray) -> np.ndarray:
+    """Adds noise to measurements at a specific time.
+
+    Args:
+        x: Satellite state vector
+        time: Simulation time
+        station_ids: list of zero-indexed station IDs that are in view
+        noise_covariance: The covariance matrix of the AWGN to be added to the
+            measurements
+
+    Returns:
+        A list of noisy measurements in the form:
+            [rho, rho_dot, phi, station_id]
+    """
+    y_stack = get_measurements(x, time, station_ids)
+
+    for y in y_stack:
+        y[1:3] += util.sample_random_vec(np.zeros(3), noise_covariance)
+
+    return y_stack
+
+
 @dataclasses.dataclass
 class OdetProblem:
     """Contains parameters for the ODet estimation problem."""

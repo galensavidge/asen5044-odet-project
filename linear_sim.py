@@ -42,19 +42,18 @@ def main():
     # full perturbed solution
     x_k_pert, y_k_pert = pert_sol(x_k, dx_k, station_ids_list, dy_k, op.dt)
 
+    fig, axs = plt.subplots(4, 1)
+    plotting.states(dx_k, t, axs, 'Linearized')
+    plotting.states(dx_k_nl, t, axs, 'Nonlinear')
+    fig.suptitle('State Perturbations')
+    fig.tight_layout()
 
-    # fig,axs= plt.subplots(4,1)
-    # plotting.states(dx_k,t,axs,'Linearized')
-    # plotting.states(dx_k_nl,t,axs,'Nonlinear')
-    # fig.suptitle('Linearized Sim State Perturbations')
-    # fig.tight_layout()
-
-    # fig2,axs2= plt.subplots(4,1)
-    # plotting.states(x_k_pert,t,axs2,'Linearized w/ pert')
-    # plotting.states(x_k,t,axs2,'Nominal')
-    # plotting.states(x_k_pert_nl,t,axs2,'Nonlinear w/ pert')
-    # fig2.suptitle('Linearized Sim State')
-    # fig2.tight_layout()
+    fig2, axs2 = plt.subplots(4, 1)
+    plotting.states(x_k_pert, t, axs2, 'Linearized w/ pert')
+    #  plotting.states(x_k, t, axs2, 'Nominal')
+    plotting.states(x_k_pert_nl, t, axs2, 'Nonlinear w/ pert')
+    fig2.suptitle('Satellite State Simulation')
+    fig2.tight_layout()
 
     fig3, axs3 = plt.subplots(4, 1)
     # plotting.measurements_withids(y_k, t, axs3,'Nonimal',color='k')
@@ -64,7 +63,7 @@ def main():
                                   'Nonlinear w/ pert',
                                   color='k')
     plotting.measurements_withids(y_k_pert, t, axs3, 'Linearized w/ Pert')
-    fig3.suptitle('Linearized Sim Measurements')
+    fig3.suptitle('Linearized Measurement Simulation')
     fig3.tight_layout()
 
     # fig4,axs4 = plt.subplots(4,1)
@@ -90,7 +89,8 @@ def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, station_ids_list: List,
                                                      station_ids_list)):
         t = dt * t_idx
 
-        # get nominal measurements for each of the ground stations in view of the perturbed state
+        # get nominal measurements for each of the ground stations in view of
+        # the perturbed state
         y_nom = problem_setup.get_measurements(x_nom, t, station_ids)
 
         # add perturbation to get perturbed measurements
@@ -154,7 +154,8 @@ def prop_pert(dx0: np.ndarray, x_nom: np.ndarray, station_ids_list: List,
             idx = 0
             for id_idx in station_ids:
                 dy_id.append([
-                    dy[idx * 3], dy[idx * 3 + 1], dy[idx * 3 + 2], id_idx + 1])
+                    dy[idx * 3], dy[idx * 3 + 1], dy[idx * 3 + 2], id_idx + 1
+                ])
                 idx += 1
         dy_k[t_idx] = dy_id
 
@@ -162,7 +163,7 @@ def prop_pert(dx0: np.ndarray, x_nom: np.ndarray, station_ids_list: List,
 
 
 def calc_dt_jacobians(
-    x: np.ndarray, mu: float, dt: float, t: float, station_ids: List[bool]
+    x: np.ndarray, mu: float, dt: float, t: float, station_ids: List[int]
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Calculate the discrete-time Jacobians at a time step.
 
@@ -171,7 +172,7 @@ def calc_dt_jacobians(
         mu: graviational paramter
         dt: time step
         t: time
-        station_ids: list of 12 booleans specifying which ground stations are in view
+        station_ids: List of zero-indexed station IDs that are in view
 
     Returns:
         F: 4x4 array, dynamics Jacobian
@@ -179,7 +180,7 @@ def calc_dt_jacobians(
         Oh: 4X2 array, process noise Jacobian
         H: 3*GSx4 array, output Jacobian (GS is number of ground stations in
             view), = None if none are in view
-        M: 3*GSx2 array, feedthrough Jacobian (GS is number of ground 
+        M: 3*GSx2 array, feedthrough Jacobian (GS is number of ground
             stations in view), = None if none are in view
     """
 
@@ -201,7 +202,7 @@ def calc_ct_jacobians(
         x: state vector [X,Xdot,Y,Ydot]
         t: time
         mu: graviational paramter
-        station_ids: list of 12 booleans specifying which ground stations are in view
+        station_ids: List of zero-indexed station IDs that are in view
 
     Returns:
         A: 4x4 array, dynamics Jacobian
@@ -209,7 +210,7 @@ def calc_ct_jacobians(
         Gam: 4X2 array, process noise Jacobian
         C: 3*GSx4 array, output Jacobian (GS is number of ground stations in
             view), = None if none are in view
-        D: 3*GSx2 array, feedthrough Jacobian (GS is number of ground 
+        D: 3*GSx2 array, feedthrough Jacobian (GS is number of ground
             stations in view), = None if none are in view
     """
     X, Xdot, Y, Ydot = x
@@ -252,4 +253,3 @@ def calc_ct_jacobians(
 
 if __name__ == "__main__":
     main()
-

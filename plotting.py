@@ -20,10 +20,10 @@ def states(x_k: np.ndarray,
     """
 
     # separate states
-    X = x_k[:,0]
-    Xdot = x_k[:,1]
-    Y = x_k[:,2]
-    Ydot = x_k[:,3]
+    X = x_k[:, 0]
+    Xdot = x_k[:, 1]
+    Y = x_k[:, 2]
+    Ydot = x_k[:, 3]
 
     # plot
     axs[0].plot(t, X, label=legend_label)
@@ -32,8 +32,12 @@ def states(x_k: np.ndarray,
     axs[3].plot(t, Ydot, label=legend_label)
 
     # add labels
-    for ax in axs:
-        ax.set(xlim=[t[0], t[-1]], xlabel='Time [s]')
+    for ii, ax in enumerate(axs):
+        if ii == len(axs) - 1:
+            ax.set(xlim=[t[0], t[-1]], xlabel='Time [s]')
+        else:
+            ax.set(xlim=[t[0], t[-1]])
+
         ax.grid(visible=True)
 
         if legend_label:
@@ -43,6 +47,7 @@ def states(x_k: np.ndarray,
     axs[1].set(ylabel='Xdot [km/s]')
     axs[2].set(ylabel='Y [km]')
     axs[3].set(ylabel='Ydot [km/s]')
+
 
 # def measurements(y_k: List,
 #                  t: np.ndarray,
@@ -56,10 +61,11 @@ def states(x_k: np.ndarray,
 #         axs: list of matplotlib Axes objects to plot on
 #         legend_label: optional string to use for legend
 #         line_style: optional string to use for plot line style
-#     """ 
+#     """
 
 #     # seperate measurements into arrays for each element
-#     # 2d arrays: first dim is time, second is to store multiple measurement values
+#     # 2d arrays: first dim is time, second is to store multiple measurement
+#     values
 #     rho = np.full((np.size(t),1),np.nan)
 #     rho_dot = np.full((np.size(t),1),np.nan)
 #     phi = np.full((np.size(t),1),np.nan)
@@ -68,7 +74,8 @@ def states(x_k: np.ndarray,
 
 #         # check how many measurements are in this time step
 #         if len(y) != 0 and len(y) % 3 != 0:
-#             raise ValueError('Measurement vector does not have multiples of three elements.')
+#             raise ValueError('Measurement vector does not have multiples of
+#             three elements.')
 #         num_meas = int(len(y) / 3)
 
 #         # if this is the most so far, adjust the meas arrays sizes
@@ -77,7 +84,7 @@ def states(x_k: np.ndarray,
 #             rho = np.hstack((rho,np.full((np.size(t),1),np.nan)))
 #             rho_dot = np.hstack((rho_dot,np.full((np.size(t),1),np.nan)))
 #             phi = np.hstack((phi,np.full((np.size(t),1),np.nan)))
-        
+
 #         # add elements to meas arrays
 #         for idx in range(num_meas):
 #             print(f'{num_meas=},{idx=},{y=}')
@@ -101,17 +108,15 @@ def states(x_k: np.ndarray,
 
 #     axs[0].set(ylabel='rho [km]')
 #     axs[1].set(ylabel='rho_dot [km/s]')
-#     axs[2].set(ylabel='phi [rad]')  
-        
-
-
-
+#     axs[2].set(ylabel='phi [rad]')
 
 
 def measurements_withids(y_k: List,
-                 t: np.ndarray,
-                 axs: List[matplotlib.axes.Axes],
-                 legend_label: str = '',marker_style = '.',color = None):
+                         t: np.ndarray,
+                         axs: List[matplotlib.axes.Axes],
+                         legend_label: str = '',
+                         marker_style='.',
+                         color=None):
     """Plot measurements and station IDs on 4 subplots.
 
     Args:
@@ -152,32 +157,43 @@ def measurements_withids(y_k: List,
         if st_id > 0:
             ll = ''
         axs[0].scatter(t,
-                    y_id[st_id, :, 0],
-                    label=ll,
-                    color=id_colors[st_id],s=ms,marker=marker_style)
+                       y_id[st_id, :, 0],
+                       label=ll,
+                       color=id_colors[st_id],
+                       s=ms,
+                       marker=marker_style)
         axs[1].scatter(t,
-                    y_id[st_id, :, 1],
-                    label=ll,
-                    color=id_colors[st_id],s=ms,marker=marker_style)
+                       y_id[st_id, :, 1],
+                       label=ll,
+                       color=id_colors[st_id],
+                       s=ms,
+                       marker=marker_style)
         axs[2].scatter(t,
-                    y_id[st_id, :, 2],
-                    label=ll,
-                    color=id_colors[st_id],s=ms,marker=marker_style)
+                       y_id[st_id, :, 2],
+                       label=ll,
+                       color=id_colors[st_id],
+                       s=ms,
+                       marker=marker_style)
         axs[3].scatter(t,
-                    t_id[st_id, :],
-                    label=ll,
-                    color=id_colors[st_id],s=ms,marker=marker_style)
+                       t_id[st_id, :],
+                       label=ll,
+                       color=id_colors[st_id],
+                       s=ms,
+                       marker=marker_style)
 
     # add labels
-    for ax in axs:
-        ax.set(xlim=[t[0], t[-1]], xlabel='Time [s]')
+    for ii, ax in enumerate(axs):
+        if ii == len(axs) - 1:
+            ax.set(xlim=[t[0], t[-1]], xlabel='Time [s]')
+        else:
+            ax.set(xlim=[t[0], t[-1]])
+
         ax.grid(visible=True)
 
     if legend_label:
         axs[0].legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
 
-    axs[0].set(ylabel='rho [km]')
+    axs[0].set(ylabel=r'\rho\; [km]')
     axs[1].set(ylabel='rho_dot [km/s]')
     axs[2].set(ylabel='phi [rad]')
     axs[3].set(ylabel='Visible Station ID')
-
