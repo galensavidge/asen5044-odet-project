@@ -9,27 +9,28 @@ import matplotlib.pyplot as plt
 import problem_setup
 import plotting
 import nonlinear_sim
-import util
+
 
 def main():
 
-
     # propogate nominal trajectory
     op = problem_setup.OdetProblem()
-    prop_time = 1400*op.dt
-    t, x_k = nonlinear_sim.integrate_nl_ct_eom(op.x0, np.arange(0, prop_time, op.dt))
+    prop_time = 1401 * op.dt
+    t, x_k = nonlinear_sim.integrate_nl_ct_eom(op.x0,
+                                               np.arange(0, prop_time, op.dt))
     y_k = problem_setup.states_to_meas(x_k, t)
 
     # prop linearized perturbations
     # dx0 = np.array([5,0.1,5,0.1])
     # dx0 = np.array([3,0,0,0])
-    dx0 = np.array([0,0.075,0,-0.021])
-    u_k = np.zeros((np.size(t),2))
-    
-    dx_k,dy_k = prop_pert(dx0,x_k,u_k,op.dt,problem_setup.MU_EARTH)
+    dx0 = np.array([0, 0.075, 0, -0.021])
+    u_k = np.zeros((np.size(t), 2))
+
+    dx_k, dy_k = prop_pert(dx0, x_k, u_k, op.dt, problem_setup.MU_EARTH)
 
     # prop nonlinear perturbations
-    _,x_k_pert_nl = nonlinear_sim.integrate_nl_ct_eom(op.x0 + dx0, np.arange(0, prop_time, op.dt))
+    _, x_k_pert_nl = nonlinear_sim.integrate_nl_ct_eom(
+        op.x0 + dx0, np.arange(0, prop_time, op.dt))
     y_k_pert_nl = problem_setup.states_to_meas(x_k_pert_nl, t)
     dx_k_nl = x_k_pert_nl - x_k
 
@@ -95,12 +96,13 @@ def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, dy_k: List,dt: float) -> Tup
             y.append(full)
         y_k[t_idx] = y
 
-    return x_k,y_k
+    return x_k, y_k
 
 
-def prop_pert(dx0:np.ndarray,x_nom:np.ndarray,du_k:np.ndarray,dt:float,mu:float) -> Tuple[np.ndarray,List[List]]:
+def prop_pert(dx0: np.ndarray, x_nom: np.ndarray, du_k: np.ndarray, dt: float,
+              mu: float) -> Tuple[np.ndarray, List[List]]:
     """Propogate perturbations through linearized dynamics.
-    
+
     Args:
         dx0: 4x1 array, initial perturbation state
         x_nom: 4xT array, nominal trajectory
@@ -110,16 +112,19 @@ def prop_pert(dx0:np.ndarray,x_nom:np.ndarray,du_k:np.ndarray,dt:float,mu:float)
 
     Returns:
         dx_k: 4xT array, state perturbations from the nominal trajectory
-        dy_k: 3d array of measurement perturbations, first  dimension is time steps, second dimension holds measurement vectors for each ground station in view, third dimension are the measurements in form of [rho,rhodot,phi,id]
+        dy_k: 3d array of measurement perturbations, first  dimension is time
+            steps, second dimension holds measurement vectors for each ground
+            station in view, third dimension are the measurements in form of
+            [rho,rhodot,phi,id]
     """
 
     dx_k = np.zeros(np.shape(x_nom))
     dx_k[0,:] = dx0
     dy_k = [[] for i in range(np.size(x_nom,0))]
 
-    for t_idx,x in enumerate(x_nom):
-        dx = dx_k[t_idx,:]
-        du = du_k[t_idx,:]
+    for t_idx, x in enumerate(x_nom):
+        dx = dx_k[t_idx, :]
+        du = du_k[t_idx, :]
 
         # check which ground stations are in view based on current perturbed state
         x_pert = x + dx_k[t_idx]
@@ -129,7 +134,7 @@ def prop_pert(dx0:np.ndarray,x_nom:np.ndarray,du_k:np.ndarray,dt:float,mu:float)
                 station_ids[ii] = True
 
         # calc time step using nominal trajectory
-        F,G,Oh,H,M = calc_dt_jacobians(x,mu,dt,dt*t_idx,station_ids)
+        F, G, Oh, H, M = calc_dt_jacobians(x, mu, dt, dt * t_idx, station_ids)
 
         # save state perturbation propogation to the next time step
         if t_idx != np.size(x_nom,0) -1:
@@ -146,19 +151,22 @@ def prop_pert(dx0:np.ndarray,x_nom:np.ndarray,du_k:np.ndarray,dt:float,mu:float)
                     idx += 1
         dy_k[t_idx] = dy_id
 
-    return dx_k,dy_k
+    return dx_k, dy_k
 
 
-def calc_dt_jacobians(x: np.ndarray, mu:float, dt: float, t: float,station_ids: List[bool]) -> Tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray,np.ndarray]:
+def calc_dt_jacobians(
+    x: np.ndarray, mu: float, dt: float, t: float, station_ids: List[bool]
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Calculate the discrete-time Jacobians at a time step.
-    
+
     Args:
         x: state vector [X,Xdot,Y,Ydot]
         mu: graviational paramter
-        dt: time step 
+        dt: time step
         t: time
-        station_ids: list of 12 booleans specifying which ground stations are in view
-    
+        station_ids: list of 12 booleans specifying which ground stations are
+            in view
+
     Returns:
         F: 4x4 array, dynamics Jacobian
         G: 4x2 array, input Jacobian
@@ -167,25 +175,27 @@ def calc_dt_jacobians(x: np.ndarray, mu:float, dt: float, t: float,station_ids: 
         M: 3x2 array, feedthrough Jacobian
     """
 
-    A,B,Gam,C,D = calc_ct_jacobians(x,t,mu,station_ids)
-    F = np.eye(4) + A*dt
-    G = dt*B
-    Oh = dt*Gam
+    A, B, Gam, C, D = calc_ct_jacobians(x, t, mu, station_ids)
+    F = np.eye(4) + A * dt
+    G = dt * B
+    Oh = dt * Gam
     H = C
     M = D
-    return F,G,Oh,H,M
+    return F, G, Oh, H, M
 
 
-    
-def calc_ct_jacobians(x: np.ndarray,t:float, mu:float, station_ids: List[bool]) -> Tuple[np.ndarray,np.ndarray,np.ndarray,np.ndarray,np.ndarray]:
+def calc_ct_jacobians(
+    x: np.ndarray, t: float, mu: float, station_ids: List[bool]
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Calculate the continuous-time Jacobians at a time step.
-    
+
     Args:
         x: state vector [X,Xdot,Y,Ydot]
         t: time
         mu: graviational paramter
-        station_ids: list of 12 booleans specifying which ground stations are in view
-    
+        station_ids: list of 12 booleans specifying which ground stations are
+            in view
+
     Returns:
         A: 4x4 array, dynamics Jacobian
         B: 4x2 array, input Jacobian
@@ -195,22 +205,26 @@ def calc_ct_jacobians(x: np.ndarray,t:float, mu:float, station_ids: List[bool]) 
     """
 
     X, Xdot, Y, Ydot = x
-    r = np.linalg.norm([X,Y])
-    A = np.array([[0,1,0,0],[mu/r**5*(2*X**2-Y**2),0,mu/r**5*3*X*Y,0],[0,0,0,1],[mu/r**5*3*X*Y,0,mu/r**5*(2*Y**2-X**2),0]])
-    B = np.array([[0,0],[1,0],[0,0],[0,1]])
-    Gam = np.array([[0,0],[1,0],[0,0],[0,1]])
+    r = np.linalg.norm([X, Y])
+    A = np.array([[0, 1, 0, 0],
+                  [mu / r**5 * (2 * X**2 - Y**2), 0, mu / r**5 * 3 * X * Y, 0],
+                  [0, 0, 0, 1],
+                  [mu / r**5 * 3 * X * Y, 0, mu / r**5 * (2 * Y**2 - X**2),
+                   0]])
+    B = np.array([[0, 0], [1, 0], [0, 0], [0, 1]])
+    Gam = np.array([[0, 0], [1, 0], [0, 0], [0, 1]])
 
     C = None
     D = None
     for idx,in_view in enumerate(station_ids):
 
-        if not in_view: 
+        if not in_view:
             continue
 
         # ground station state
         Xi, Yi = problem_setup.ground_station_position(idx, t)
         Xdoti, Ydoti = problem_setup.ground_station_velocity(idx, t)
-        
+
         # create C for this ground station and stack in total C
         rho = np.sqrt((X - Xi)**2 + (Y - Yi)**2)
         rhodot = ((X - Xi) * (Xdot - Xdoti) + (Y - Yi) * (Ydot - Ydoti)) / rho
@@ -219,12 +233,12 @@ def calc_ct_jacobians(x: np.ndarray,t:float, mu:float, station_ids: List[bool]) 
         if C is None:
             C = Cii
         else:
-            C = np.vstack((C,Cii))
+            C = np.vstack((C, Cii))
 
     if C is not None:
         D = np.zeros((np.size(C,0),2))
 
-    return A,B,Gam,C,D
+    return A, B, Gam, C, D
 
 
 if __name__ == "__main__":

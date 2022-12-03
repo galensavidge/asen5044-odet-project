@@ -1,4 +1,6 @@
 """Kalman filter update equations."""
+from typing import Tuple
+
 import numpy as np
 
 
@@ -64,3 +66,32 @@ def a_posteriori_covariance(Pm: np.ndarray, H: np.ndarray, R: np.ndarray,
     n = np.size(H, 1)
     M = np.eye(n) - K @ H
     return M @ Pm @ M.T + K @ R @ K.T
+
+
+def kf_iteration(x: np.ndarray, u: np.ndarray, P: np.ndarray, y: np.ndarray,
+                 F: np.ndarray, G: np.ndarray, H: np.ndarray, Q: np.ndarray,
+                 R: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Runs one iteration of the linear Kalman filter (KF).
+
+    Args:
+        x: A posteriori state estimate at time k-1
+        u: Control at time k-1
+        P: A posteriori estimation error covariance at time k-1
+        y: Measurement at time k
+        F: Dynamics matrix at time k-1
+        G: Control effect matrix at time k-1
+        H: Measurement matrix at time k
+        Q: Process noise covariance matrix at time k-1
+        R: Measurement noise covariance matrix at time k
+
+    Returns:
+        A tuple of the a posteriori state estimate at time k and the a
+        posteriori estimation error covariance estimate at time k.
+    """
+    Pm = a_priori_covariance(P, F, Q)
+    K = kalman_gain(Pm, H, R)
+    xm = a_priori_state(x, u, F, G)
+    xp = a_posteriori_state(xm, y, H, K)
+    Pp = a_posteriori_covariance(Pm, H, R, K)
+
+    return xp, Pp
