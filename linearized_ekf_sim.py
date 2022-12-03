@@ -13,24 +13,26 @@ import problem_setup
 
 
 def main():
-    # Propogate nominal trajectory
     op = problem_setup.OdetProblem()
-    w_no_noise = np.zeros((int(np.floor(op.T0 / op.dt)), 2))
-    t, x_k_nom = nonlinear_sim.integrate_nl_ct_eom(op.x0, op.dt, op.T0,
+    prop_time = 4 * op.T0
+
+    # Propogate nominal trajectory
+    w_no_noise = np.zeros((int(np.floor(prop_time / op.dt)), 2))
+    t, x_k_nom = nonlinear_sim.integrate_nl_ct_eom(op.x0, op.dt, prop_time,
                                                    w_no_noise)
 
     # Prop nonlinear perturbations
     dx0 = 0.1 * np.array([0, 0.075, 0, -0.021])
     _, x_k_pert_nl = nonlinear_sim.integrate_nl_ct_eom(op.x0 + dx0, op.dt,
-                                                       op.T0, w_no_noise)
+                                                       prop_time, w_no_noise)
     station_ids_list = [
         problem_setup.find_visible_stations(x, t)
         for x, t in zip(x_k_pert_nl, t)
     ]
 
     # Generate noisy measurements
-    y_k_pert_nl = problem_setup.states_to_meas(x_k_pert_nl, t,
-                                               station_ids_list)
+    y_k_pert_nl = problem_setup.states_to_noisy_meas(x_k_pert_nl, t,
+                                                     station_ids_list, op.R)
 
     u_k = np.zeros((np.size(t), 2))
     dx_est_0 = np.array([10, 0.1, -10, -0.1])
@@ -49,10 +51,12 @@ def main():
     plotting.states(x_k_est, t, axs, 'Estimated')
     plotting.states(x_k_pert_nl, t, axs, 'True')
     fig.suptitle('Satellite State Estimate')
+    fig.tight_layout()
 
     fig, axs = plt.subplots(4, 1)
     plotting.plot_2sig_err(axs, x_k_err, t, P_est_k)
     fig.suptitle('State Estimate Error')
+    fig.tight_layout()
 
     plt.show()
 

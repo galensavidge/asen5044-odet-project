@@ -226,7 +226,6 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
 
         ax.set(xlim=[time[0], time[-1]],
                xlabel='Time [s]',
-               ylabel=state_labels[idx],
-               title=state_labels[idx] + ' State Error')
-        ax.legend()
+               ylabel=state_labels[idx])
+        ax.legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
         ax.grid()
