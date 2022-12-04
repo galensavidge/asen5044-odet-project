@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Monte Carlo simulations."""
 
 from typing import List
@@ -6,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import consistency_tests
+import ekf_sim
 import linearized_ekf_sim
 import nonlinear_sim
 import plotting
@@ -119,9 +121,17 @@ class KF_Sim:
 
     def extended_kalman_filter(self, x_est0: np.ndarray, P0: np.ndarray,
                                Qkf: np.ndarray, Rkf: np.ndarray):
-        # TODO: fill in with extended kalman filter code
-        self.state_err = self.x_true
-        self.meas_err = self.y_true
+        self.x_est, self.y_est, self.err_cov, self.inn_cov = (ekf_sim.run_ekf(
+            self.y_true, self.nom.time, x_est0, P0, self.nom.op.dt, Qkf, Rkf))
+
+        # Find error
+        self.x_err = self.x_true - self.x_est
+        self.y_err = problem_setup.addsubtract_meas_vecs(
+            self.y_true, self.y_est, -1)
+
+        # set variables for NEES and NIS
+        self.state_err = self.x_err
+        self.meas_err = self.y_err
 
 
 def run_monte_carlo(tfinal: float, x0_nom: np.ndarray, x0_est: np.ndarray,
@@ -203,7 +213,7 @@ def run_ekf_mc(tfinal: float,
                plot_meas: bool = False):
     """Run Monte Carlo with the EKF."""
 
-    x0 = np.array([10, 0.1, -10, -0.1]) * 400
+    x0 = x0_nom
     P0 = np.diag([10, 0.2, 10, 0.2])
 
     sims = run_monte_carlo(tfinal, x0_nom, x0, P0, Q, R, num_sims, 'EKF')
@@ -248,8 +258,8 @@ def main():
     alpha = 0.05
 
     # run whichever or both
-    run_lkf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, True, True, True, True)
-    # run_ekf_mc(tfinal,x0_nom,Q,R,num_sims,alpha,False,False,False)
+    #  run_lkf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, True, True, True, True)
+    run_ekf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, False, False, False)
 
     plt.show()
 
