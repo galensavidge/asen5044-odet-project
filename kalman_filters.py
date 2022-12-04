@@ -59,6 +59,20 @@ def a_posteriori_state(xm: np.ndarray, y: np.ndarray, H: np.ndarray,
         return xm + K @ (y - H @ xm)
 
 
+def a_posteriori_state_ekf(xm: np.ndarray, y: np.ndarray, y_est: np.ndarray,
+                           K: np.ndarray) -> np.ndarray:
+    """Find the EFK a posteriori state estimate.
+
+    Args:
+        xm: A priori state estimate at time k
+        y: Measurement at time k
+        y_est: Estimated measurement at time k, i.e. h_k(xm), the nonlinear
+            output function called with the a priori state estimate
+        K: Kalman gain at time k
+    """
+    return xm + K @ (y - y_est)
+
+
 def a_posteriori_covariance(Pm: np.ndarray, H: np.ndarray, R: np.ndarray,
                             K: np.ndarray) -> np.ndarray:
     """Finds the a posteriori estimation error covariance matrix.
@@ -75,6 +89,19 @@ def a_posteriori_covariance(Pm: np.ndarray, H: np.ndarray, R: np.ndarray,
         n = np.size(H, 1)
         M = np.eye(n) - K @ H
         return M @ Pm @ M.T + K @ R @ K.T
+
+
+def a_posteriori_covariance_ekf(Pm: np.ndarray, H: np.ndarray,
+                                K: np.ndarray) -> np.ndarray:
+    """Finds the EKF a posteriori estimation error covariance matrix.
+
+    Args:
+        Pm: A priori estimation error covariance matrix at time k
+        H: Output matrix at time k
+        K: Kalman gain at time k
+    """
+    n = np.size(H, 1)
+    return (np.eye(n) - K @ H) @ Pm
 
 
 def innovation_covariance_matrix(Pm: np.ndarray, H: np.ndarray,

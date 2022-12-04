@@ -63,7 +63,8 @@ def example_sim_wnoise():
 
     fig2, axs2 = plt.subplots(4, 1)
     plotting.measurements_withids(y_k, t, axs2)
-    fig2.suptitle('Nonlinear Sim Measurements w/ Process and Measurement Noise')
+    fig2.suptitle(
+        'Nonlinear Sim Measurements w/ Process and Measurement Noise')
     fig2.tight_layout()
 
 

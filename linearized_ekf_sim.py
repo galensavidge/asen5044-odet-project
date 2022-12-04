@@ -23,8 +23,10 @@ def main():
 
     # Prop nonlinear perturbations
     dx0 = 0.1 * np.array([0, 0.075, 0, -0.021])
+    w = problem_setup.form_process_noise(int(np.floor(prop_time / op.dt)),
+                                         op.W)
     _, x_k_pert_nl = nonlinear_sim.integrate_nl_ct_eom(op.x0 + dx0, op.dt,
-                                                       prop_time, w_no_noise)
+                                                       prop_time, w)
     station_ids_list = [
         problem_setup.find_visible_stations(x, t)
         for x, t in zip(x_k_pert_nl, t)
@@ -36,7 +38,7 @@ def main():
 
     dx_est_0 = np.array([10, 0.1, -10, -0.1])
     P0 = np.diag([200, 2, 200, 2])
-    Q = 10**-10 * np.diag([1, 1])
+    Q = 10**-10 * np.eye(2)
     R = op.R
     dx_k_est, dy_k_est, P_est_k, S_k = run_linearized_kf(
         x_k_nom, y_k_pert_nl, t, dx_est_0, P0, op.dt, Q, R)
@@ -95,13 +97,14 @@ def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
 
         # Find ground stations in view at k
         station_ids = [y[3] for y in ys_plus]
-        
+
         # Find nominal measurements
         ys_nom = problem_setup.get_measurements(x_nom_plus, t_plus,
                                                 station_ids)
 
-        # Current perturbation measumrent    
-        dy_plus = problem_setup.addsubtract_meas_vecs([ys_plus],[ys_nom],-1)[0]
+        # Current perturbation measumrent
+        dy_plus = problem_setup.addsubtract_meas_vecs([ys_plus], [ys_nom],
+                                                      -1)[0]
         dy_plus_stack = problem_setup.form_stacked_meas_vecs([dy_plus])[0][0]
 
         # The total measurement noise covariance for the stacked Y vector (at
@@ -120,12 +123,13 @@ def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
 
         # Run one iteration of the Kalman filter to find an estimate at time k
         x_est, y_est, P, S = kalman_filters.kf_iteration(
-            x_est, u_minus, P, dy_plus_stack, F_minus, G_minus, H_plus, M_plus, Qk,
-            R_aug)
+            x_est, u_minus, P, dy_plus_stack, F_minus, G_minus, H_plus, M_plus,
+            Qk, R_aug)
 
         x_ests.append(x_est)
         Ps.append(P)
-        y_ests.append(problem_setup.unstack_meas_vecs([y_est],[station_ids])[0])
+        y_ests.append(
+            problem_setup.unstack_meas_vecs([y_est], [station_ids])[0])
         Ss.append(S)
 
     return np.array(x_ests), y_ests, np.array(Ps), Ss
