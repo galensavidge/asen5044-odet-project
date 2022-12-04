@@ -20,8 +20,6 @@ def main():
                                                np.arange(0, prop_time, op.dt))
 
     # prop nonlinear perturbations
-    # dx0 = np.array([5,0.1,5,0.1])
-    # dx0 = np.array([3,0,0,0])
     dx0 = np.array([0, 0.075, 0, -0.021])
     _, x_k_pert_nl = nonlinear_sim.integrate_nl_ct_eom(
         op.x0 + dx0, np.arange(0, prop_time, op.dt))
@@ -92,8 +90,7 @@ def pert_sol(x_k_nom: np.ndarray, dx_k: np.ndarray, station_ids_list: List,
                                                      station_ids_list)):
         t = dt * t_idx
 
-        # get nominal measurements for each of the ground stations in view of
-        # the perturbed state
+        # get nominal measurements for each of the ground stations in view of the perturbed state
         y_nom = problem_setup.get_measurements(x_nom, t, station_ids)
 
         # add perturbation to get perturbed measurements
@@ -157,8 +154,7 @@ def prop_pert(dx0: np.ndarray, x_nom: np.ndarray, station_ids_list: List,
             idx = 0
             for id_idx in station_ids:
                 dy_id.append([
-                    dy[idx * 3], dy[idx * 3 + 1], dy[idx * 3 + 2], id_idx + 1
-                ])
+                    dy[idx * 3], dy[idx * 3 + 1], dy[idx * 3 + 2], id_idx + 1])
                 idx += 1
         dy_k[t_idx] = dy_id
 
@@ -175,15 +171,16 @@ def calc_dt_jacobians(
         mu: graviational paramter
         dt: time step
         t: time
-        station_ids: list of 12 booleans specifying which ground stations are
-            in view
+        station_ids: list of 12 booleans specifying which ground stations are in view
 
     Returns:
         F: 4x4 array, dynamics Jacobian
         G: 4x2 array, input Jacobian
         Oh: 4X2 array, process noise Jacobian
-        H: 3x4 array, output Jacobian
-        M: 3x2 array, feedthrough Jacobian
+        H: 3*GSx4 array, output Jacobian (GS is number of ground stations in
+            view), = None if none are in view
+        M: 3*GSx2 array, feedthrough Jacobian (GS is number of ground 
+            stations in view), = None if none are in view
     """
 
     A, B, Gam, C, D = calc_ct_jacobians(x, t, mu, station_ids)
@@ -204,8 +201,7 @@ def calc_ct_jacobians(
         x: state vector [X,Xdot,Y,Ydot]
         t: time
         mu: graviational paramter
-        station_ids: list of 12 booleans specifying which ground stations are
-            in view
+        station_ids: list of 12 booleans specifying which ground stations are in view
 
     Returns:
         A: 4x4 array, dynamics Jacobian
@@ -213,8 +209,8 @@ def calc_ct_jacobians(
         Gam: 4X2 array, process noise Jacobian
         C: 3*GSx4 array, output Jacobian (GS is number of ground stations in
             view), = None if none are in view
-        D: 3*GSx2 array, feedthrough Jacobian (GS is number of ground stations
-            in view), = None if none are in view
+        D: 3*GSx2 array, feedthrough Jacobian (GS is number of ground 
+            stations in view), = None if none are in view
     """
     X, Xdot, Y, Ydot = x
     r = np.linalg.norm([X, Y])
@@ -257,8 +253,3 @@ def calc_ct_jacobians(
 if __name__ == "__main__":
     main()
 
-# TODO: y pert doesn't look like his
-# current, this looks at the perturbed state to check if the ground station is
-# in view and then calcs the measurement vectors for those ground stations. It
-# cuts off too early (compared to Dr. Ahmeds results) for some of the states,
-# specifically the ones with a lot of state perturbation.

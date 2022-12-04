@@ -24,8 +24,9 @@ def ground_station_position(station_id: int, time: float):
 
 def ground_station_velocity(station_id: int, time: float):
     """Returns the Cartesian velocity of a ground station.
+
     Args:
-        station_id: xero-indexed
+        station_id: zero-indexed
     """
     theta = OMEGA_EARTH * time + station_id * np.pi / 6
     return R_EARTH * OMEGA_EARTH * np.array([np.sin(theta), -np.cos(theta)])
@@ -36,7 +37,7 @@ def check_ground_station_visibility(station_id: int, time: float, X: float,
     """Returns if satellite is within range of ground station.
 
     Args:
-        station_id: xero-indexed
+        station_id: zero-indexed
     """
 
     Xi, Yi = ground_station_position(station_id, time)

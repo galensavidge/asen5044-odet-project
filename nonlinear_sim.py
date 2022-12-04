@@ -23,7 +23,11 @@ def main():
     fig.tight_layout()
 
     # measurements
-    y_k = problem_setup.states_to_meas(x_k, t)
+    station_ids_list = [
+        problem_setup.find_visible_stations(x, t)
+        for x, t in zip(x_k, t)
+    ]
+    y_k = problem_setup.states_to_meas(x_k, t,station_ids_list)
 
     fig2, axs2 = plt.subplots(4, 1)
     plotting.measurements_withids(y_k, t, axs2)
