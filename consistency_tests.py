@@ -21,15 +21,21 @@ NIS: Normalized Innovation Squared
 from typing import List, Tuple
 
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats.distributions import chi2
+
+import plotting
 
 
 # TODO: MOVE THIS OBJECT TO THE MONTE CARLO PYTHON FILE WHEN WE MAKE IT.
 # could also do a different organization. just need a way to handle N mc runs x n states x T time steps (add a dimension for the err_covs!)
 
 class MC_Sim_Results:
-    def __init__(self,x_true,y_true,x_est,y_est,err_cov,inn_cov) -> None:
+    def __init__(self,time,x_true,y_true,x_est,y_est,err_cov,inn_cov) -> None:
         """Save MC results to an object."""
+
+        # Time vector
+        self.time = time
 
         # Ground truth
         self.x_true = x_true
@@ -44,7 +50,22 @@ class MC_Sim_Results:
         # inn_cov is H*P-*H^T+R at every time step
         self.err_cov = err_cov
         self.inn_cov = inn_cov
-        
+
+def nees_and_nis_test(sim_objs: List[MC_Sim_Results],alpha: float):
+    """Perform NEES and NIS tests on MC run outputs and plot results."""   
+
+    # tests
+    nees,r1_nees,r2_nees = nees_test(sim_objs,alpha)
+    nis,r1_nis,r2_nis = nis_test(sim_objs,alpha)
+
+    # assume all sims have the same time vector
+    time = sim_objs[0].time
+
+    # plot
+    fig1,ax1 = plt.subplots(1,1)
+    plotting.plot_nees_test(ax1,nees,time,r1_nees,r2_nees)
+    fig2,ax2 = plt.subplots(1,1)
+    plotting.plot_nis_test(ax2,nis,time,r1_nis,r2_nis)
 
 def nees_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,float,float]:
     """Perform the NEES test on MC simulation results.
