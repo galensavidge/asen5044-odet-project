@@ -18,9 +18,10 @@ NIS: Normalized Innovation Squared
     The NIS test examines the measurement residual at every time step to determine if the consistency condition #3 holds. The test follows the same steps of the NEES test, except using a normalized squared measurement residual instead of state error.
 """
 
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
+from scipy.stats.distributions import chi2
 
 
 # TODO: MOVE THIS OBJECT TO THE MONTE CARLO PYTHON FILE WHEN WE MAKE IT.
@@ -45,21 +46,83 @@ class MC_Sim_Results:
         self.inn_cov = inn_cov
         
 
-def nees_test(sim_objs = List[MC_Sim_Results]):
-    """Perform the NEES test on MC simulation results."""
+def nees_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,float,float]:
+    """Perform the NEES test on MC simulation results.
+    
+    Args:
+        sim_objs: list of objects storing results from MC simulations
+        alpha: significance level of test (alpha = 0.05 for a 95% confidence interval)
+
+    Returns:
+        avg_err_sq_norm: array of normalized squared state error values averaged over all the simulations
+        r1: upper error bound according to alpha
+        r2: lower error bound according to alpha
+    """
 
     # number of sims
     N = len(sim_objs)
 
-    avg_err_sq_norm = np.zeros()
+    # number of states
+    n = np.size(sim_objs[0].x_true,1)
+
+    # get normed error squared for each time step avgd over the N sims
+    avg_err_sq_norm = np.zeros(n)
     for idx,sim in enumerate(sim_objs):
+
+        # get normed error squared for current sim
         err = sim.x_true - sim.x_est
         err_sq_norm = sq_weight(err,sim.err_cov)
+
+        # avg into total
+        if idx == 0:
+            avg_err_sq_norm = err_sq_norm
+        else:
+            avg_err_sq_norm = (avg_err_sq_norm + err_sq_norm)/2
     
-    # TODO:
-    # average err_sq_norm for all sims
-    # get r1 and r2
-    # return relevant info
+    # calc bounds
+    r1 = chi2.ppf(alpha/2,N*n)/N
+    r2 = chi2.ppf(1-alpha/2,N*n)/N
+
+    return avg_err_sq_norm, r1, r2
+
+def nis_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,float,float]:
+    """Perform the NIS test on MC simulation results.
+    
+    Args:
+        sim_objs: list of objects storing results from MC simulations
+        alpha: significance level of test (alpha = 0.05 for a 95% confidence interval)
+
+    Returns:
+        avg_res_sq_norm: array of normalized squared measurement residual values averaged over all the simulations
+        r1: upper error bound according to alpha
+        r2: lower error bound according to alpha
+    """
+
+    # number of sims
+    N = len(sim_objs)
+
+    # number of measurements
+    p = np.size(sim_objs[0].y_true,1)
+
+    # get normed residual squared for each time step avgd over the N sims
+    avg_res_sq_norm = np.zeros(p)
+    for idx,sim in enumerate(sim_objs):
+
+        # get normed residual squared for current sim
+        res = sim.y_true - sim.y_est
+        res_sq_norm = sq_weight(res,sim.inn_cov)
+
+        # avg into total
+        if idx == 0:
+            avg_res_sq_norm = res_sq_norm
+        else:
+            avg_res_sq_norm = (avg_res_sq_norm + res_sq_norm)/2
+    
+    # calc bounds
+    r1 = chi2.ppf(alpha/2,N*p)/N
+    r2 = chi2.ppf(1-alpha/2,N*p)/N
+
+    return avg_res_sq_norm, r1, r2
         
 
 def sq_weight(vec_k: np.ndarray,weight_k:np.ndarray) -> np.ndarray:
@@ -70,17 +133,15 @@ def sq_weight(vec_k: np.ndarray,weight_k:np.ndarray) -> np.ndarray:
         weight_k: Txnxn array of weight matrices
 
     Returns:
-        vec_sq_weight_k: Txn array of weighted squares
+        vec_sq_weight_k: Tx1 array of weighted squares
     """
 
-    #TODO: test this
-
-    vec_sq_weight_k = np.zeros(np.size(vec_k))
+    vec_sq_weight_k = np.zeros(np.size(vec_k,1))
     for t_idx,(vec,weight) in enumerate(zip(vec_k,weight_k)):
-        vec_sq_weight_k[t_idx,:] = np.transpose(vec) @ weight @ vec
+        vec_sq_weight_k[t_idx] = np.transpose(vec) @ weight @ vec
     return vec_sq_weight_k
 
+
 # TODO:
-# NIS test
-# plotting functions
 # better MC sim results saver
+# TEST!!!!!!!!!!!!!!!!

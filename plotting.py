@@ -118,3 +118,39 @@ def measurements_withids(y_k: List,
     axs[2].set(ylabel='phi [rad]')
     axs[3].set(ylabel='Visible Station ID')
 
+def plot_nees_test(ax: matplotlib.axes.Axes,nees: np.ndarray,time:np.ndarray,r1: float, r2: float):
+    """Plot NEES test results.
+    
+    Args:
+        axs: matplotlib Axes object to plot on
+        time: array of length T, times
+        nees: array of normalized squared state error values averaged over all the simulations
+        r1: upper error bound according to alpha
+        r2: lower error bound according to alpha
+    """
+
+    ax.scatter(time,nees)
+    ax.plot(time,r1*np.ones(np.size(time)),'k--',label='r_1 bound')
+    ax.plot(time,r2*np.ones(np.size(time)),'k--',label='r_2 bound')
+    ax.set(xlabel='Time [s]',ylabel='NEES Statistic',title='NEES Estimation Results')
+    ax.set(xlim=[time[0], time[-1]])
+    ax.legend()
+
+def plot_nis_test(ax: matplotlib.axes.Axes,nis: np.ndarray,time:np.ndarray,r1: float, r2: float):
+    """Plot NIS test results.
+    
+    Args:
+        axs: matplotlib Axes object to plot on
+        time: array of length T, times
+        nis: array of normalized squared measurement residual values averaged over all the simulations
+        r1: upper error bound according to alpha
+        r2: lower error bound according to alpha
+    """
+
+    ax.scatter(time,nis)
+    ax.plot(time,r1*np.ones(np.size(time)),'k--',label='r_1 bound')
+    ax.plot(time,r2*np.ones(np.size(time)),'k--',label='r_2 bound')
+    ax.set(xlabel='Time [s]',ylabel='NIS Statistic',title='NIS Estimation Results')
+    ax.set(xlim=[time[0], time[-1]])
+    ax.legend()
+
