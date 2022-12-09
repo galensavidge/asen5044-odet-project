@@ -178,6 +178,13 @@ def states_to_noisy_meas(x_k: np.ndarray, time: np.ndarray,
 
     return y_k
 
+def form_process_noise(T: float,cov:np.ndarray):
+    """Form Tx2 vector of process noise with covariance matrix cov."""
+    w = np.zeros((T,2))
+    for t_idx in range(T):
+        w[t_idx,:] = util.sample_random_vec(np.zeros(2), cov)
+    return w
+
 
 @dataclasses.dataclass
 class OdetProblem:
@@ -200,4 +207,4 @@ class OdetProblem:
 
     def __init__(self) -> None:
         self.x0 = [self.r0, 0, 0, self.v0]
-        self.R = np.ndarray([[0.01, 0, 0], [0, 1, 0], [0, 0, 0.01]])
+        self.R = np.array([[0.01, 0, 0], [0, 1, 0], [0, 0, 0.01]])
