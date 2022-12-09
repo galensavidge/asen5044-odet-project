@@ -133,7 +133,7 @@ def form_stacked_meas_vecs(y_k: np.ndarray) -> List:
         y_k_stack: 2d list of ouptuts, first dimension is time steps, second
             dimension is a stacked vector of measurements
     """
-    y_k_stack = [[] for i in range(np.size(y_k, 0))]
+    y_k_stack = [[] for i in range(len(y_k))]
 
     for t_idx, y in enumerate(y_k):
         y_stack = []
@@ -163,7 +163,7 @@ def sample_noisy_measurements(x: np.ndarray, time: float,
     y_stack = get_measurements(x, time, station_ids)
 
     for y in y_stack:
-        y[1:3] += util.sample_random_vec(np.zeros(3), noise_covariance)
+        y[0:3] += util.sample_random_vec(np.zeros(3), noise_covariance)
 
     return y_stack
 
@@ -173,8 +173,7 @@ def states_to_noisy_meas(x_k: np.ndarray, time: np.ndarray,
                          noise_covariance: np.ndarray) -> List:
     y_k = [[] for i in time]
     for idx, (t, station_ids) in enumerate(zip(time, station_ids_list)):
-        y_k[idx] = sample_noisy_measurements(x_k[idx, :], t, station_ids,
-                                             noise_covariance)
+        y_k[idx] = sample_noisy_measurements(x_k[idx, :], t, station_ids,noise_covariance)
 
     return y_k
 
@@ -205,6 +204,10 @@ class OdetProblem:
     # Measurement noise covariance
     R: np.ndarray = None
 
+    # Process noise covariance
+    W: np.ndarray = None
+
     def __init__(self) -> None:
         self.x0 = [self.r0, 0, 0, self.v0]
         self.R = np.array([[0.01, 0, 0], [0, 1, 0], [0, 0, 0.01]])
+        self.W = np.eye(2) * 1e-10

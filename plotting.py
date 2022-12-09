@@ -194,10 +194,10 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],err_k: np.ndarray, time:np.nda
     """
 
     # get 2 sigma errors
-    sig_k = np.zeros(np.size(err_k))
-    for t_idk, err_cov in enumerate(err_cov_k):
-        for s_idx in range(np.size(err_cov,1)):
-            sig_k[t_idk,s_idx] = (err_cov[s_idx,s_idx]**0.5)*2
+    sig_k = np.zeros(np.shape(err_k))
+    for t_idx in range(np.size(err_cov_k,0)):
+        for s_idx in range(np.size(err_cov_k,1)):
+            sig_k[t_idx,s_idx] = (err_cov_k[t_idx,s_idx,s_idx]**0.5)*2
 
     # plot
     state_labels = ['dX [km]','dXdot [km/s]','dY [km]','dYdot[km]']

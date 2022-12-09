@@ -59,11 +59,11 @@ def example_sim_wnoise():
         problem_setup.find_visible_stations(x, t)
         for x, t in zip(x_k, t)
     ]
-    y_k = problem_setup.states_to_meas(x_k, t,station_ids_list)
+    y_k = problem_setup.states_to_noisy_meas(x_k,t,station_ids_list,op.R)
 
     fig2, axs2 = plt.subplots(4, 1)
     plotting.measurements_withids(y_k, t, axs2)
-    fig2.suptitle('Nonlinear Sim Measurements w/ Process Noise')
+    fig2.suptitle('Nonlinear Sim Measurements w/ Process and Measurement Noise')
     fig2.tight_layout()
 
 

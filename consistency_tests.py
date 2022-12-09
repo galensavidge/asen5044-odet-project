@@ -25,33 +25,10 @@ import matplotlib.pyplot as plt
 from scipy.stats.distributions import chi2
 
 import plotting
+from monte_carlo import KF_Sim
 
 
-# TODO: MOVE THIS OBJECT TO THE MONTE CARLO PYTHON FILE WHEN WE MAKE IT.
-# could also do a different organization. just need a way to handle N mc runs x n states x T time steps (add a dimension for the err_covs!)
-
-class MC_Sim_Results:
-    def __init__(self,time,x_true,y_true,x_est,y_est,err_cov,inn_cov) -> None:
-        """Save MC results to an object."""
-
-        # Time vector
-        self.time = time
-
-        # Ground truth
-        self.x_true = x_true
-        self.y_true = y_true
-
-        # Estimated filter state and measurements
-        self.x_est = x_est
-        self.y_est = y_est
-
-        # Filter error covariances
-        # err_cov is P+ at every time step
-        # inn_cov is H*P-*H^T+R at every time step
-        self.err_cov = err_cov
-        self.inn_cov = inn_cov
-
-def nees_and_nis_test(sim_objs: List[MC_Sim_Results],alpha: float):
+def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
     """Perform NEES and NIS tests on MC run outputs and plot results."""   
 
     # tests
@@ -59,7 +36,7 @@ def nees_and_nis_test(sim_objs: List[MC_Sim_Results],alpha: float):
     nis,r1_nis,r2_nis = nis_test(sim_objs,alpha)
 
     # assume all sims have the same time vector
-    time = sim_objs[0].time
+    time = sim_objs[0].truth.time
 
     # plot
     fig1,ax1 = plt.subplots(1,1)
@@ -67,7 +44,7 @@ def nees_and_nis_test(sim_objs: List[MC_Sim_Results],alpha: float):
     fig2,ax2 = plt.subplots(1,1)
     plotting.plot_nis_test(ax2,nis,time,r1_nis,r2_nis)
 
-def nees_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,float,float]:
+def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,float]:
     """Perform the NEES test on MC simulation results.
     
     Args:
@@ -84,15 +61,14 @@ def nees_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,f
     N = len(sim_objs)
 
     # number of states
-    n = np.size(sim_objs[0].x_true,1)
+    n = np.size(sim_objs[0].truth.x_true,1)
 
     # get normed error squared for each time step avgd over the N sims
-    avg_err_sq_norm = np.zeros(n)
+    avg_err_sq_norm = 0 
     for idx,sim in enumerate(sim_objs):
 
         # get normed error squared for current sim
-        err = sim.x_true - sim.x_est
-        err_sq_norm = sq_weight(err,sim.err_cov)
+        err_sq_norm = sq_weight(sim.state_err,sim.err_cov)
 
         # avg into total
         if idx == 0:
@@ -106,7 +82,7 @@ def nees_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,f
 
     return avg_err_sq_norm, r1, r2
 
-def nis_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,float,float]:
+def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,float]:
     """Perform the NIS test on MC simulation results.
     
     Args:
@@ -122,22 +98,34 @@ def nis_test(sim_objs: List[MC_Sim_Results],alpha: float) -> Tuple[np.ndarray,fl
     # number of sims
     N = len(sim_objs)
 
-    # number of measurements
-    p = np.size(sim_objs[0].y_true,1)
+    # assume all sims have the same time vector
+    time = sim_objs[0].truth.time
 
-    # get normed residual squared for each time step avgd over the N sims
-    avg_res_sq_norm = np.zeros(p)
-    for idx,sim in enumerate(sim_objs):
+    avg_res_sq_norm = np.full(np.size(time),np.nan)
+    for t_idx in range(np.size(time)):
 
-        # get normed residual squared for current sim
-        res = sim.y_true - sim.y_est
-        res_sq_norm = sq_weight(res,sim.inn_cov)
+        # number of measurements
+        p = len(sim_objs[0].truth.y_true[t_idx])
+        print(f'{p=}')
+        if p == 0:
+            continue
 
-        # avg into total
-        if idx == 0:
-            avg_res_sq_norm = res_sq_norm
-        else:
-            avg_res_sq_norm = (avg_res_sq_norm + res_sq_norm)/2
+        # get normed residual squared for THIS time step avgd over the N sims
+        avg_res_sq_norm_tidx = 0
+    
+        for idx,sim in enumerate(sim_objs):
+
+            # get normed residual squared for current sim
+            res = sim.meas_res[t_idx]
+            res_sq_norm = np.transpose(res) @ sim.inn_cov[t_idx] @ res
+
+            # avg into total
+            if idx == 0:
+                avg_res_sq_norm_tidx = res_sq_norm
+            else:
+                avg_res_sq_norm_tidx = (avg_res_sq_norm_tidx + res_sq_norm)/2
+        
+        avg_res_sq_norm[t_idx] = avg_res_sq_norm_tidx
     
     # calc bounds
     r1 = chi2.ppf(alpha/2,N*p)/N
@@ -157,9 +145,10 @@ def sq_weight(vec_k: np.ndarray,weight_k:np.ndarray) -> np.ndarray:
         vec_sq_weight_k: Tx1 array of weighted squares
     """
 
-    vec_sq_weight_k = np.zeros(np.size(vec_k,1))
+    vec_sq_weight_k = np.zeros(np.size(vec_k,0))
     for t_idx,(vec,weight) in enumerate(zip(vec_k,weight_k)):
-        vec_sq_weight_k[t_idx] = np.transpose(vec) @ weight @ vec
+        a = weight @ vec
+        vec_sq_weight_k[t_idx] = np.transpose(vec) @ a
     return vec_sq_weight_k
 
 
