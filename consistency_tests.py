@@ -166,3 +166,4 @@ def sq_weight(vec_k: np.ndarray,weight_k:np.ndarray) -> np.ndarray:
 # TODO:
 # better MC sim results saver
 # TEST!!!!!!!!!!!!!!!!
+# concern: linearized KF doesn't look at full state. could do processing after the 
