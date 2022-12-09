@@ -24,7 +24,10 @@ def kalman_gain(Pm: np.ndarray, H: np.ndarray, R: np.ndarray) -> np.ndarray:
         H: Measurement matrix at time k
         R: Measurement noise covariance matrix at time k
     """
-    return Pm @ H.T @ np.linalg.inv(H @ Pm @ H.T + R)
+    if H is None:
+        return None
+    else:
+        return Pm @ H.T @ np.linalg.inv(H @ Pm @ H.T + R)
 
 
 def a_priori_state(x: np.ndarray, u: np.ndarray, F: np.ndarray,
@@ -50,7 +53,10 @@ def a_posteriori_state(xm: np.ndarray, y: np.ndarray, H: np.ndarray,
         H: Output matrix at time k
         K: Kalman gain at time k
     """
-    return xm + K @ (y - H @ xm)
+    if H is None:
+        return xm
+    else:
+        return xm + K @ (y - H @ xm)
 
 
 def a_posteriori_covariance(Pm: np.ndarray, H: np.ndarray, R: np.ndarray,
@@ -63,9 +69,12 @@ def a_posteriori_covariance(Pm: np.ndarray, H: np.ndarray, R: np.ndarray,
         R: Measurement noise covariance matrix at time k
         K: Kalman gain at time k
     """
-    n = np.size(H, 1)
-    M = np.eye(n) - K @ H
-    return M @ Pm @ M.T + K @ R @ K.T
+    if H is None:
+        return Pm
+    else:
+        n = np.size(H, 1)
+        M = np.eye(n) - K @ H
+        return M @ Pm @ M.T + K @ R @ K.T
 
 
 def innovation_covariance_matrix(Pm: np.ndarray, H: np.ndarray,
@@ -77,7 +86,10 @@ def innovation_covariance_matrix(Pm: np.ndarray, H: np.ndarray,
         H: Output matrix at time k
         R: Measurement noise covariance matrix at time k
     """
-    return H @ Pm @ H.T + R
+    if H is None:
+        return None
+    else:
+        return H @ Pm @ H.T + R
 
 
 def a_priori_measurement(xm: np.ndarray, H: np.ndarray, u: np.ndarray,
@@ -90,8 +102,10 @@ def a_priori_measurement(xm: np.ndarray, H: np.ndarray, u: np.ndarray,
         u: Control at time k
         M: Control to output mapping matrix at time k
     """
-    print(f'{H=},{xm=},{M=},{u=}')
-    return H @ xm + M @ u
+    if H is None:
+        return np.array([])
+    else:
+        return H @ xm + M @ u
 
 
 def kf_iteration(x: np.ndarray, u: np.ndarray, P: np.ndarray, y: np.ndarray,

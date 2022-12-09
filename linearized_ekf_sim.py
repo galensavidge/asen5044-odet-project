@@ -37,7 +37,7 @@ def main():
     u_k = np.zeros((np.size(t), 2))
     dx_est_0 = np.array([10, 0.1, -10, -0.1])
     P0 = np.diag([200, 2, 200, 2])
-    Q = 10**-10 * np.diag([1, 1, 1, 1])
+    Q = 10**-10 * np.diag([1, 1])
     R = op.R
     dx_k_est, P_est_k, S_k = run_linearized_kf(x_k_nom, u_k, y_k_pert_nl, t,
                                                dx_est_0, P0,
@@ -119,15 +119,12 @@ def run_linearized_kf(x_k: np.ndarray, u_k: np.ndarray, y_k: List,
         _, _, _, H_plus, M_plus = linear_sim.calc_dt_jacobians(
             x_nom_plus, mu, dt, t_plus, station_ids)
 
-        if H_plus is None:
-            H_plus = np.array(np.zeros((1, 4)))
-            R_aug = np.array([[1]])
-            dy_plus = np.array([0])
+        Qk = Oh_minus @ Q @ Oh_minus.T
 
         # Run one iteration of the Kalman filter to find an estimate at time k
-        x_est, P, S = kalman_filters.kf_iteration(x_est, u_minus, P, dy_plus,
-                                                  F_minus, G_minus, H_plus, Q,
-                                                  R_aug)
+        x_est, y_est, P, S = kalman_filters.kf_iteration(
+            x_est, u_minus, P, dy_plus, F_minus, G_minus, H_plus, M_plus, Qk,
+            R_aug)
 
         x_ests.append(x_est)
         Ps.append(P)
