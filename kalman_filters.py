@@ -24,7 +24,7 @@ def kalman_gain(Pm: np.ndarray, H: np.ndarray, R: np.ndarray) -> np.ndarray:
         H: Measurement matrix at time k
         R: Measurement noise covariance matrix at time k
     """
-    return Pm @ H @ np.linalg.inv(H @ Pm @ H.T + R)
+    return Pm @ H.T @ np.linalg.inv(H @ Pm @ H.T + R)
 
 
 def a_priori_state(x: np.ndarray, u: np.ndarray, F: np.ndarray,
