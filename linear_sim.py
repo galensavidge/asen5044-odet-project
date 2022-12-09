@@ -16,13 +16,13 @@ def main():
     # propogate nominal trajectory
     op = problem_setup.OdetProblem()
     prop_time = 1401 * op.dt
-    t, x_k = nonlinear_sim.integrate_nl_ct_eom(op.x0,
-                                               np.arange(0, prop_time, op.dt))
+    w = np.zeros((int(np.floor(prop_time/op.dt)),2))
+    t, x_k = nonlinear_sim.integrate_nl_ct_eom(op.x0,op.dt,prop_time,w)
 
     # prop nonlinear perturbations
     dx0 = np.array([0, 0.075, 0, -0.021])
     _, x_k_pert_nl = nonlinear_sim.integrate_nl_ct_eom(
-        op.x0 + dx0, np.arange(0, prop_time, op.dt))
+        op.x0 + dx0,op.dt,prop_time,w)
     station_ids_list = [
         problem_setup.find_visible_stations(x, t)
         for x, t in zip(x_k_pert_nl, t)
