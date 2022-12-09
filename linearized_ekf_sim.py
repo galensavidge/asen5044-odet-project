@@ -34,12 +34,15 @@ def main():
     y_k_pert_nl = problem_setup.states_to_noisy_meas(x_k_pert_nl, t,
                                                      station_ids_list, op.R)
 
+    u_k = np.zeros((np.size(t), 2))
     dx_est_0 = np.array([10, 0.1, -10, -0.1])
     P0 = np.diag([200, 2, 200, 2])
     Q = 10**-10 * np.diag([1, 1, 1, 1])
     R = op.R
-    dx_k_est, dy_k_est, P_est_k, S_k = run_linearized_kf(
-        x_k_nom, y_k_pert_nl, t, dx_est_0, P0, op.dt, Q, R)
+    dx_k_est, P_est_k, S_k = run_linearized_kf(x_k_nom, u_k, y_k_pert_nl, t,
+                                               dx_est_0, P0,
+                                               problem_setup.MU_EARTH, op.dt,
+                                               Q, R)
 
     x_k_est = x_k_nom + dx_k_est
     x_k_err = x_k_est - x_k_pert_nl
@@ -58,35 +61,33 @@ def main():
     plt.show()
 
 
-def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
-                      x0_est: np.ndarray, P0: np.ndarray, dt: float,
-                      Q: np.ndarray, R: np.ndarray):
+def run_linearized_kf(x_k: np.ndarray, u_k: np.ndarray, y_k: List,
+                      t_k: np.ndarray, x0_est: np.ndarray, P0: np.ndarray,
+                      mu: float, dt: float, Q: np.ndarray, R: np.ndarray):
     """Runs the linearized Kalman filter for some set of measurements.
 
     Args:
         x_k: Full state time history on the nominal trajectory
+        u_k: Control time history
         y_k: Measurement time history, as output by
             problem_setup.get_measurements()
         t_k: List of time points
         x0_est: Initial state perturbation estimate
         PO: Initial state perturbation error covariance matrix
+        mu: Two-body gravitational parameter
         dt: Discrete time step
         Q: Estimated discrete time process noise covariance matrix
         R: Estimated discrete time measurement noise covariance matrix (for a
             single ground station)
 
     Returns:
-        Time histories of the state purturbation estimate, the output
-        perturbation estimate, the state perturbation error covariance matrix,
-        and the innovation matrix
+        Time histories of the state purturbation estimate, the state
+        perturbation error covariance matrix, and the innovation matrix
     """
-    u_k = np.zeros((np.size(t_k), 2))
-
     x_est = x0_est
     P = P0
 
     x_ests = [x_est]
-    y_ests = [None]
     Ps = [P0]
     Ss = [None]
 
@@ -112,11 +113,11 @@ def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
 
         # Calculate F, G, and Omega, Jacobians at k-1
         F_minus, G_minus, Oh_minus, _, _ = linear_sim.calc_dt_jacobians(
-            x_nom_minus, problem_setup.MU_EARTH, dt, t_minus, [])
+            x_nom_minus, mu, dt, t_minus, [])
 
         # Calculate H and M Jacobians at k
         _, _, _, H_plus, M_plus = linear_sim.calc_dt_jacobians(
-            x_nom_plus, problem_setup.MU_EARTH, dt, t_plus, station_ids)
+            x_nom_plus, mu, dt, t_plus, station_ids)
 
         if H_plus is None:
             H_plus = np.array(np.zeros((1, 4)))
@@ -124,16 +125,15 @@ def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
             dy_plus = np.array([0])
 
         # Run one iteration of the Kalman filter to find an estimate at time k
-        x_est, y_est, P, S = kalman_filters.kf_iteration(
-            x_est, u_minus, P, dy_plus, F_minus, G_minus, H_plus, M_plus, Q,
-            R_aug)
+        x_est, P, S = kalman_filters.kf_iteration(x_est, u_minus, P, dy_plus,
+                                                  F_minus, G_minus, H_plus, Q,
+                                                  R_aug)
 
         x_ests.append(x_est)
         Ps.append(P)
-        y_ests.append(y_est)
         Ss.append(S)
 
-    return np.array(x_ests), y_ests, np.array(Ps), Ss
+    return np.array(x_ests), np.array(Ps), Ss
 
 
 if __name__ == "__main__":

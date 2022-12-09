@@ -90,6 +90,7 @@ def a_priori_measurement(xm: np.ndarray, H: np.ndarray, u: np.ndarray,
         u: Control at time k
         M: Control to output mapping matrix at time k
     """
+    print(f'{H=},{xm=},{M=},{u=}')
     return H @ xm + M @ u
 
 

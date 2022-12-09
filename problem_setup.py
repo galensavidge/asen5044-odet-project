@@ -188,7 +188,7 @@ def form_process_noise(T: int, cov: np.ndarray):
 
 
 def form_zero_process_noise(T: int) -> np.ndarray:
-    return np.zeros(T, 2)
+    return np.zeros((T, 2))
 
 
 @dataclasses.dataclass
