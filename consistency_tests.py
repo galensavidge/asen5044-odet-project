@@ -33,7 +33,7 @@ def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
 
     # tests
     nees,r1_nees,r2_nees = nees_test(sim_objs,alpha)
-    nis,r1_nis,r2_nis = nis_test(sim_objs,alpha)
+    # nis,r1_nis,r2_nis = nis_test(sim_objs,alpha)
 
     # assume all sims have the same time vector
     time = sim_objs[0].truth.time
@@ -41,8 +41,10 @@ def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
     # plot
     fig1,ax1 = plt.subplots(1,1)
     plotting.plot_nees_test(ax1,nees,time,r1_nees,r2_nees)
-    fig2,ax2 = plt.subplots(1,1)
-    plotting.plot_nis_test(ax2,nis,time,r1_nis,r2_nis)
+    # fig2,ax2 = plt.subplots(1,1)
+    # plotting.plot_nis_test(ax2,nis,time,r1_nis,r2_nis)
+    fig1.tight_layout()
+    # fig2.tight_layout()
 
 def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,float]:
     """Perform the NEES test on MC simulation results.
@@ -61,7 +63,7 @@ def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,flo
     N = len(sim_objs)
 
     # number of states
-    n = np.size(sim_objs[0].truth.x_true,1)
+    n = np.size(sim_objs[0].x_true,1)
 
     # get normed error squared for each time step avgd over the N sims
     avg_err_sq_norm = 0 
@@ -77,8 +79,9 @@ def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,flo
             avg_err_sq_norm = (avg_err_sq_norm + err_sq_norm)/2
     
     # calc bounds
-    r1 = chi2.ppf(alpha/2,N*n)/N
-    r2 = chi2.ppf(1-alpha/2,N*n)/N
+    time = sim_objs[0].truth.time
+    r1 = chi2.ppf(alpha/2,N*n)/N * np.ones(np.size(time))
+    r2 = chi2.ppf(1-alpha/2,N*n)/N *  np.ones(np.size(time))
 
     return avg_err_sq_norm, r1, r2
 
@@ -102,12 +105,14 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
     time = sim_objs[0].truth.time
 
     avg_res_sq_norm = np.full(np.size(time),np.nan)
+    r1 = np.zeros(np.size(time))
+    r2 = np.zeros(np.size(time))
     for t_idx in range(np.size(time)):
 
         # number of measurements
-        p = len(sim_objs[0].truth.y_true[t_idx])
-        print(f'{p=}')
-        if p == 0:
+        num_meas = np.size(sim_objs[0].meas_res[t_idx])
+        p = num_meas * 3
+        if num_meas == 0:
             continue
 
         # get normed residual squared for THIS time step avgd over the N sims
@@ -127,9 +132,9 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
         
         avg_res_sq_norm[t_idx] = avg_res_sq_norm_tidx
     
-    # calc bounds
-    r1 = chi2.ppf(alpha/2,N*p)/N
-    r2 = chi2.ppf(1-alpha/2,N*p)/N
+        # calc bounds
+        r1[t_idx] = chi2.ppf(alpha/2,N*p)/N
+        r2[t_idx] = chi2.ppf(1-alpha/2,N*p)/N
 
     return avg_res_sq_norm, r1, r2
         
@@ -153,6 +158,4 @@ def sq_weight(vec_k: np.ndarray,weight_k:np.ndarray) -> np.ndarray:
 
 
 # TODO:
-# better MC sim results saver
-# TEST!!!!!!!!!!!!!!!!
-# concern: linearized KF doesn't look at full state. could do processing after the 
+# NIS when number of measurements is different

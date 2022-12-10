@@ -151,8 +151,8 @@ def plot_nees_test(ax: matplotlib.axes.Axes, nees: np.ndarray,
     """
 
     ax.scatter(time, nees)
-    ax.plot(time, r1 * np.ones(np.size(time)), 'k--', label='r_1 bound')
-    ax.plot(time, r2 * np.ones(np.size(time)), 'k--', label='r_2 bound')
+    ax.plot(time, r1, 'k--', label='r_1 bound')
+    ax.plot(time, r2, 'k--', label='r_2 bound')
     ax.set(xlabel='Time [s]',
            ylabel='NEES Statistic',
            title='NEES Estimation Results')
@@ -174,8 +174,8 @@ def plot_nis_test(ax: matplotlib.axes.Axes, nis: np.ndarray, time: np.ndarray,
     """
 
     ax.scatter(time, nis)
-    ax.plot(time, r1 * np.ones(np.size(time)), 'k--', label='r_1 bound')
-    ax.plot(time, r2 * np.ones(np.size(time)), 'k--', label='r_2 bound')
+    ax.plot(time, r1, 'k--', label='r_1 bound')
+    ax.plot(time, r2, 'k--', label='r_2 bound')
     ax.set(xlabel='Time [s]',
            ylabel='NIS Statistic',
            title='NIS Estimation Results')
@@ -224,7 +224,9 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
                 color=state_colors[idx],
                 label='_nolegend_')
 
-        ax.set(xlim=[time[0], time[-1]],
+        ylims = np.mean(sig_k[30:,idx])
+
+        ax.set(xlim=[time[0], time[-1]],ylim=[-1.2*ylims,1.2*ylims],
                xlabel='Time [s]',
                ylabel=state_labels[idx])
         ax.legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
