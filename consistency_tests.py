@@ -122,7 +122,7 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
 
             # get normed residual squared for current sim
             res = sim.meas_res[t_idx]
-            res_sq_norm = np.transpose(res) @ sim.inn_cov[t_idx] @ res
+            res_sq_norm = np.transpose(res) @ np.linalg.inv(sim.inn_cov[t_idx]) @ res
 
             # avg into total
             if idx == 0:
@@ -139,21 +139,20 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
     return avg_res_sq_norm, r1, r2
         
 
-def sq_weight(vec_k: np.ndarray,weight_k:np.ndarray) -> np.ndarray:
+def sq_weight(vec_k: np.ndarray,inv_weight_k:np.ndarray) -> np.ndarray:
     """Find the weighted squared vector.
     
     Args:
         vec_k: Txn array of vectors
-        weight_k: Txnxn array of weight matrices
+        inv_weight_k: Txnxn array of the inverse of the weight matrices
 
     Returns:
         vec_sq_weight_k: Tx1 array of weighted squares
     """
 
     vec_sq_weight_k = np.zeros(np.size(vec_k,0))
-    for t_idx,(vec,weight) in enumerate(zip(vec_k,weight_k)):
-        a = weight @ vec
-        vec_sq_weight_k[t_idx] = np.transpose(vec) @ a
+    for t_idx,(vec,weight) in enumerate(zip(vec_k,inv_weight_k)):
+        vec_sq_weight_k[t_idx] = np.transpose(vec) @ np.linalg.inv(weight) @ vec
     return vec_sq_weight_k
 
 
