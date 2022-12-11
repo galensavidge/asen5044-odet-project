@@ -172,13 +172,14 @@ def unstack_meas_vecs(y_k_stack: List, station_ids_k: List) -> List:
     return y_k
 
 
-def addsubtract_meas_vecs(y_k_plus: List, y_k_minus: List,s: int) -> List:
+def addsubtract_meas_vecs(y_k_plus: List, y_k_minus: List,s: int,m: float = 1) -> List:
     """Add or subtract y_k_minus to/from y_k_plus. If station IDs don't match, then the measurements are ignored.
     
     Args:
         y_k_plus: 3d array of outputs, first  dimension is time steps, second dimension holds measurement vectors for each ground station in view, third dimension are the measurements in form of [rho,rhodot,phi,id] (output of states_to_meas)
         y_k_minus: same
         s: switch to define operation, 1 for addition, -1 for subtraction
+        m: optional multiplication scalar
 
     
     Returns:
@@ -201,16 +202,38 @@ def addsubtract_meas_vecs(y_k_plus: List, y_k_minus: List,s: int) -> List:
         s_id_ans = []
         
         # if the same stations are in view, subtract like normal
-        if len(s_id_plus) == len(s_id_minus):
-            id_matches = np.equal(s_id_plus,s_id_minus)
-            if np.all(id_matches):
-                y_ans = np.array(y_plus) + s * np.array(y_minus)
-                s_id_ans = s_id_plus
-        
-        # if they don't have the same stations in view
+        if len(s_id_plus) == len(s_id_minus) and np.all(np.equal(s_id_plus,s_id_minus)):
+            y_ans = (np.array(y_plus) + s * np.array(y_minus)) * m
+            s_id_ans = s_id_plus
+            
+        else:
+            # if they're mismatched 
+            print(f'Time step {t_idx}, {s_id_plus=},{s_id_minus=}')
+
+            # if one of the station id lists is empty, ignore them
+            if np.size(s_id_plus) != 0 and np.size(s_id_minus) != 0:
+
+                # find which ids match and what their idxs are in the id lists
+                s_id_match = []
+                s_id_match_idx = []
+                for p_idx,id_p in enumerate(s_id_plus):
+                    for m_idx,id_m in enumerate(s_id_minus):
+                        if id_p == id_m:
+                            s_id_match.append(id_m)
+                            s_id_match_idx.append([p_idx,m_idx])
+                            
+                # sort so that id numbers are in order
+                s_id_ans = sorted(s_id_match)
+                s_id_ans_idx = [idx for _, idx in sorted(zip(s_id_match, s_id_match_idx))]
+
+                # for each matching id, do the addition/subtraction
+                for s_id_idx in s_id_ans_idx:
+                    y_p = y_plus[s_id_idx[0]*3:s_id_idx[0]*3 + 3]
+                    y_m = y_minus[s_id_idx[1]*3:s_id_idx[1]*3 + 3]
+                    y_ans.extend((np.array(y_p) + s * np.array(y_m))*m)
+                    
 
         # print(f'{s_id_minus=},{s_id_plus=},{s_id_ans=}')
-        # check the unstack function
 
         y_k_stack_ans[t_idx] = y_ans
         station_ids_k_ans[t_idx] = s_id_ans
@@ -218,6 +241,24 @@ def addsubtract_meas_vecs(y_k_plus: List, y_k_minus: List,s: int) -> List:
     # Put measurments back into unstacked form with station ids
     y_k_ans = unstack_meas_vecs(y_k_stack_ans,station_ids_k_ans)
     return y_k_ans
+
+def retrieve_meas_with_station_id(y: List, station_ids: List) -> List:
+    """Return list of measurements from y with the station ids specified.
+    
+    Args:
+        y: 2d list, 0 dimension holds measurement vectors for each ground station in view, 1 dimension are the measurements in form of [rho,rhodot,phi,id] (output of states_to_meas)
+        station_ids: list of station ids, corresponding measurements will be returned
+
+    Returns:
+        y_of_stations: 2d list of measurements for the input station ids
+    """
+
+    y_of_stations = []
+    for id in sorted(station_ids):
+        for meas in y:
+            if meas[3] == id:
+                y_of_stations.append(meas)
+    return y_of_stations
 
 
 def sample_noisy_measurements(x: np.ndarray, time: float,

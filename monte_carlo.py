@@ -130,7 +130,7 @@ def main():
     
 
     # NEES and NIS
-    # consistency_tests.nees_and_nis_test(sims, 0.05)
+    consistency_tests.nees_and_nis_test(sims, 0.05)
 
     plt.show()
 

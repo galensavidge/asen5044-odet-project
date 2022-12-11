@@ -26,6 +26,7 @@ from scipy.stats.distributions import chi2
 
 import plotting
 from monte_carlo import KF_Sim
+import problem_setup
 
 
 def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
@@ -33,7 +34,7 @@ def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
 
     # tests
     nees,r1_nees,r2_nees = nees_test(sim_objs,alpha)
-    # nis,r1_nis,r2_nis = nis_test(sim_objs,alpha)
+    nis,r1_nis,r2_nis = nis_test(sim_objs,alpha)
 
     # assume all sims have the same time vector
     time = sim_objs[0].truth.time
@@ -41,10 +42,10 @@ def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
     # plot
     fig1,ax1 = plt.subplots(1,1)
     plotting.plot_nees_test(ax1,nees,time,r1_nees,r2_nees)
-    # fig2,ax2 = plt.subplots(1,1)
-    # plotting.plot_nis_test(ax2,nis,time,r1_nis,r2_nis)
+    fig2,ax2 = plt.subplots(1,1)
+    plotting.plot_nis_test(ax2,nis,time,r1_nis,r2_nis)
     fig1.tight_layout()
-    # fig2.tight_layout()
+    fig2.tight_layout()
 
 def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,float]:
     """Perform the NEES test on MC simulation results.
@@ -70,7 +71,7 @@ def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,flo
     for idx,sim in enumerate(sim_objs):
 
         # get normed error squared for current sim
-        err_sq_norm = sq_weight(sim.state_err,sim.err_cov)
+        err_sq_norm = sq_weight(sim.dx_err,sim.err_cov)
 
         # avg into total
         if idx == 0:
@@ -110,19 +111,45 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
     for t_idx in range(np.size(time)):
 
         # number of measurements
-        num_meas = np.size(sim_objs[0].meas_res[t_idx])
+        num_meas = len(sim_objs[0].dy_err[t_idx])
         p = num_meas * 3
         if num_meas == 0:
             continue
 
         # get normed residual squared for THIS time step avgd over the N sims
         avg_res_sq_norm_tidx = 0
+        common_station_ids = []
     
         for idx,sim in enumerate(sim_objs):
 
+            station_ids = [y[3] for y in sim.dy_err[t_idx]]
+
+            # only take common station ids
+            if idx == 0:
+                common_station_ids = station_ids
+                use_ids = station_ids
+                use_inn_cov = sim.inn_cov[t_idx]
+            else:
+                use_id_idx = []
+                use_ids = []
+                for cs_id in common_station_ids:
+                    for s_id_idx,s_id in enumerate(station_ids):
+                        if s_id == cs_id:
+                            use_id_idx.append(s_id_idx)
+                            use_ids.append(s_id)
+
+
+                # TODO: figure out how to take the correct subset of inn cov
+                inn_cov_ids = []
+                use_inn_cov = np.eye(len(use_ids)*3)
+            
+            # redo stacked measurement by only taking the common station ids
+            use_dy = problem_setup.retrieve_meas_with_station_id(sim.dy_err[t_idx],use_ids)
+            use_dy_stack = problem_setup.form_stacked_meas_vecs([use_dy])[0][0]
+            use_inn_cov = np.eye(np.size(use_dy_stack))
+
             # get normed residual squared for current sim
-            res = sim.meas_res[t_idx]
-            res_sq_norm = np.transpose(res) @ np.linalg.inv(sim.inn_cov[t_idx]) @ res
+            res_sq_norm = np.transpose(use_dy_stack) @ np.linalg.inv(use_inn_cov) @ use_dy_stack
 
             # avg into total
             if idx == 0:

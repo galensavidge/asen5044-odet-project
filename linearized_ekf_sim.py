@@ -123,8 +123,6 @@ def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
             x_est, u_minus, P, dy_plus_stack, F_minus, G_minus, H_plus, M_plus, Qk,
             R_aug)
 
-        # Add station IDs to the y_est output
-
         x_ests.append(x_est)
         Ps.append(P)
         y_ests.append(problem_setup.unstack_meas_vecs([y_est],[station_ids])[0])
