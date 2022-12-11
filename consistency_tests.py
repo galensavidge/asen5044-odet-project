@@ -30,7 +30,7 @@ import problem_setup
 
 
 def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
-    """Perform NEES and NIS tests on MC run outputs and plot results."""   
+    """Perform NEES and NIS tests on LKF MC run outputs and plot results."""   
 
     # tests
     nees,r1_nees,r2_nees = nees_test(sim_objs,alpha)
@@ -71,7 +71,7 @@ def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,flo
     for idx,sim in enumerate(sim_objs):
 
         # get normed error squared for current sim
-        err_sq_norm = sq_weight(sim.dx_err,sim.err_cov)
+        err_sq_norm = sq_weight(sim.state_err,sim.err_cov)
 
         # avg into total
         if idx == 0:
@@ -111,7 +111,7 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
     for t_idx in range(np.size(time)):
 
         # number of measurements
-        num_meas = len(sim_objs[0].dy_err[t_idx])
+        num_meas = len(sim_objs[0].meas_err[t_idx])
         p = num_meas * 3
         if num_meas == 0:
             continue
@@ -122,7 +122,7 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
     
         for idx,sim in enumerate(sim_objs):
 
-            station_ids = [y[3] for y in sim.dy_err[t_idx]]
+            station_ids = [y[3] for y in sim.meas_err[t_idx]]
 
             # only take common station ids
             if idx == 0:
@@ -147,12 +147,12 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
                 use_inn_cov = sim.inn_cov[t_idx][inn_cov_idx]
             
             # redo stacked measurement by only taking the common station ids
-            use_dy = problem_setup.retrieve_meas_with_station_id(sim.dy_err[t_idx],use_ids)
-            use_dy_stack = problem_setup.form_stacked_meas_vecs([use_dy])[0][0]
-            use_inn_cov = np.eye(np.size(use_dy_stack))
+            use_meas = problem_setup.retrieve_meas_with_station_id(sim.meas_err[t_idx],use_ids)
+            use_meas_stack = problem_setup.form_stacked_meas_vecs([use_meas])[0][0]
+            use_inn_cov = np.eye(np.size(use_meas_stack))
 
             # get normed residual squared for current sim
-            res_sq_norm = np.transpose(use_dy_stack) @ np.linalg.inv(use_inn_cov) @ use_dy_stack
+            res_sq_norm = np.transpose(use_meas_stack) @ np.linalg.inv(use_inn_cov) @ use_meas_stack
 
             # avg into total
             if idx == 0:

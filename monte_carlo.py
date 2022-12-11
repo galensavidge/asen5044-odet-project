@@ -34,17 +34,31 @@ class Sim:
         _, self.x_nom = nonlinear_sim.integrate_nl_ct_eom(
             x0, self.op.dt, self.tfinal, w_no_noise)
         self.u = np.zeros((self.T, 2))
-        
-
 
 class KF_Sim:
 
-    def __init__(self, truth_sim: Sim, dx_est0: np.ndarray,
-                 P0: np.ndarray, Qkf: np.ndarray, Rkf: np.ndarray):
+    def __init__(self, truth_sim: Sim, x_est0: np.ndarray,
+                 P0: np.ndarray, Qkf: np.ndarray, Rkf: np.ndarray,kf_type:str):
+        """Run truth sim with noise and perturbation, perform KF, store results.
+        
+        Args:
+            truth_sim: Sim object with nominal trajectory
+            x_est0: intitial estimate for KF
+            P0: initial error covariance matrix for KF
+            Qkf: process noise covariance matrix for KF to estimate with
+            Rkf: measurement noise covariance matrix for KF to estimate with
+            kf_type: 'LKF' will run the linearized KF (above inputs are then related to perturbations from the nominal trajectory). 'EKF' will run the extended KF (above inputs are related to the full state)
+        """
+
+        if kf_type != 'LKF' and kf_type != 'EKF':
+            raise ValueError(f'KF type {kf_type} is not valid. Use LKF or EKF.')
 
         self.truth = truth_sim
         self.integrate_nom_traj()
-        self.kalman_filter(dx_est0,P0,Qkf,Rkf)
+        if kf_type == 'LKF':
+            self.linearized_kalman_filter(x_est0,P0,Qkf,Rkf)
+        if kf_type == 'EKF':
+            self.extended_kalman_filter(x_est0,P0,Qkf,Rkf)
 
     def integrate_nom_traj(self):
 
@@ -63,14 +77,13 @@ class KF_Sim:
         self.y_true = problem_setup.states_to_noisy_meas(
             self.x_true, self.truth.time, self.station_ids_list, self.truth.op.R)
 
-        # find nonlinear perturbations
+
+    def linearized_kalman_filter(self, dx_est0: np.ndarray,
+                 P0: np.ndarray, Qkf: np.ndarray, Rkf: np.ndarray):
+
+         # find nonlinear perturbations
         self.dx = self.x_true - self.truth.x_nom
         self.dy = problem_setup.addsubtract_meas_vecs(self.y_true, self.y_nom, -1)
-
-
-    
-    def kalman_filter(self, dx_est0: np.ndarray,
-                 P0: np.ndarray, Qkf: np.ndarray, Rkf: np.ndarray):
 
         # Estimated filter state and measurements
         self.dx_est, self.dy_est, self.err_cov, self.inn_cov = linearized_ekf_sim.run_linearized_kf(self.truth.x_nom,self.y_true,self.truth.time, dx_est0,P0, self.truth.op.dt, Qkf,Rkf)
@@ -80,9 +93,18 @@ class KF_Sim:
         # Find error
         self.dx_err = self.dx - self.dx_est
         self.dy_err = problem_setup.addsubtract_meas_vecs(self.dy,self.dy_est,-1)
-
         self.x_err = self.x_true - self.x_est
         self.y_err = problem_setup.addsubtract_meas_vecs(self.y_true,self.y_est,-1)
+
+        # set variables for NEES and NIS
+        self.state_err = self.dx_err
+        self.meas_err = self.dy_err
+    
+    def extended_kalman_filter(self, x_est0: np.ndarray, P0: np.ndarray, Qkf: np.ndarray, Rkf: np.ndarray):
+        # TODO: fill in with extended kalman filter code
+        self.state_err = self.x_true
+        self.meas_err = self.y_true
+    
 
 def run_monte_carlo(tfinal: float, x0_true: np.ndarray, dx0: np.ndarray,P0: np.ndarray,Q:np.ndarray,R:np.ndarray,num_sims: int) -> List[KF_Sim]:
     """Run Monte Carlo simulations."""
@@ -93,7 +115,7 @@ def run_monte_carlo(tfinal: float, x0_true: np.ndarray, dx0: np.ndarray,P0: np.n
     sims = [[] for i in range(num_sims)]
     for idx in range(num_sims):
         print(f'KF Estimation #{idx+1} out of {num_sims}')
-        sims[idx] = KF_Sim(truth,dx0,P0,Q,R)
+        sims[idx] = KF_Sim(truth,dx0,P0,Q,R,'LKF')
 
     return sims
 
@@ -108,7 +130,7 @@ def main():
     Q = 10**-10 * np.diag([1, 1])
     R = op.R
 
-    sims = run_monte_carlo(tfinal, x0_true,dx0,P0,Q,R, 10)
+    sims = run_monte_carlo(tfinal, x0_true,dx0,P0,Q,R, 5)
 
     
 
