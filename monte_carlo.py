@@ -65,11 +65,9 @@ class KF_Sim:
 
         # find nonlinear perturbations
         self.dx = self.x_true - self.truth.x_nom
-        self.y_true_stacked = problem_setup.form_stacked_meas_vecs(self.y_true)
-        y_nom_stacked = problem_setup.form_stacked_meas_vecs(self.y_nom)
-        self.dy = [[] for i in self.y_true]
-        for t_idx,(y_tr,y_no) in enumerate(zip(self.y_true_stacked,y_nom_stacked)):
-            self.dy[t_idx] = np.array(y_tr) - np.array(y_no)
+        self.dy = problem_setup.addsubtract_meas_vecs(self.y_true, self.y_nom, -1)
+
+
     
     def kalman_filter(self, dx_est0: np.ndarray,
                  P0: np.ndarray, Qkf: np.ndarray, Rkf: np.ndarray):
@@ -77,20 +75,14 @@ class KF_Sim:
         # Estimated filter state and measurements
         self.dx_est, self.dy_est, self.err_cov, self.inn_cov = linearized_ekf_sim.run_linearized_kf(self.truth.x_nom,self.y_true,self.truth.time, dx_est0,P0, self.truth.op.dt, Qkf,Rkf)
         self.x_est = self.dx_est + self.truth.x_nom
-
-        y_nom_stacked = problem_setup.form_stacked_meas_vecs(self.y_true)
-        self.y_est = self.dy_est + y_nom_stacked
+        self.y_est = problem_setup.addsubtract_meas_vecs(self.dy_est,self.y_nom,1)
 
         # Find error
-        self.state_err = self.dx - self.dx_est
-        self.meas_res = [np.array([]) for i in self.y_true]
-        for t_idx,(y_tr,dy_es) in enumerate(zip(self.y_true_stacked,self.dy_est)):
-            if t_idx != 0:
-                self.meas_res[t_idx] = np.array(y_tr) - np.array(dy_es)
+        self.dx_err = self.dx - self.dx_est
+        self.dy_err = problem_setup.addsubtract_meas_vecs(self.dy,self.dy_est,-1)
 
-        # TODO: calcing measurement residuals - go into each time an state and
-        # subtract, but keep station id
-
+        self.x_err = self.x_true - self.x_est
+        self.y_err = problem_setup.addsubtract_meas_vecs(self.y_true,self.y_est,-1)
 
 def run_monte_carlo(tfinal: float, x0_true: np.ndarray, dx0: np.ndarray,P0: np.ndarray,Q:np.ndarray,R:np.ndarray,num_sims: int) -> List[KF_Sim]:
     """Run Monte Carlo simulations."""
@@ -131,14 +123,14 @@ def main():
 
         # plot error
         fig2, axs2 = plt.subplots(4, 1)
-        plotting.plot_2sig_err(axs2, sim.state_err, sim.truth.time,sim.err_cov)
+        plotting.plot_2sig_err(axs2, sim.dx_err, sim.truth.time,sim.err_cov)
         fig2.suptitle(f'2 Sigma Error, Est #{idx+1}')
         fig2.tight_layout()
 
     
 
     # NEES and NIS
-    consistency_tests.nees_and_nis_test(sims, 0.05)
+    # consistency_tests.nees_and_nis_test(sims, 0.05)
 
     plt.show()
 

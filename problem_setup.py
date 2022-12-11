@@ -1,6 +1,6 @@
 import dataclasses
 
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -77,7 +77,7 @@ def get_measurements(x: np.ndarray, time: float,
 
         measurements.append([rho, rhodot, phi, ii])
 
-    return np.array(measurements)
+    return measurements
 
 
 def find_visible_stations(x: np.ndarray, time: float):
@@ -120,8 +120,8 @@ def states_to_meas(x_k: np.ndarray, time: np.ndarray,
     return y_k
 
 
-def form_stacked_meas_vecs(y_k: np.ndarray) -> List:
-    """Converts 3d array of measurement vectors to 2d array of stacked vectors.
+def form_stacked_meas_vecs(y_k: np.ndarray) -> Tuple[List,List]:
+    """Converts 3d array of measurement vectors to 2d array of stacked vectors and 2d list of station ids.
 
     Args:
         y_k: 3d array of outputs, first  dimension is time steps, second
@@ -132,16 +132,92 @@ def form_stacked_meas_vecs(y_k: np.ndarray) -> List:
     Returns:
         y_k_stack: 2d list of ouptuts, first dimension is time steps, second
             dimension is a stacked vector of measurements
+        station_ids_k: 2d list of station ids corresponding to the measurements in y_k_stack
     """
     y_k_stack = [[] for i in range(len(y_k))]
+    station_ids_k = [[] for i in range(len(y_k))]
 
     for t_idx, y in enumerate(y_k):
         y_stack = []
+        s_ids = []
         for meas in y:
             y_stack.extend(meas[0:3])
+            s_ids.append(meas[3])
         y_k_stack[t_idx] = y_stack
+        station_ids_k[t_idx] = s_ids
 
-    return y_k_stack
+    return y_k_stack,station_ids_k
+
+def unstack_meas_vecs(y_k_stack: List, station_ids_k: List) -> List:
+    """Converts 2d array of stacked measurement vectors at each time step to 3d array of measurements with station ids.
+    
+    Args:
+        y_k_stack: 2d list of ouptuts, first dimension is time steps, second dimension is a stacked vector of measurements
+        station_ids_k: 2d list of station ids corresponding to the measurements in y_k_stack
+    
+    Returns:
+        y_k: 3d array of outputs, first  dimension is time steps, second dimension holds measurement vectors for each ground station in view, third dimension are the measurements in form of [rho,rhodot,phi,id] (output of states_to_meas)
+    """
+
+    y_k = [[] for i in range(len(y_k_stack))]
+    for t_idx,(y_stack,station_ids) in enumerate(zip(y_k_stack,station_ids_k)):
+        y = []
+        p = len(y_stack)
+        for meas_idx in range(p//3):
+            # form measurement array in form [rho,rhodot,phi,id]
+            meas = y_stack[meas_idx*3:meas_idx*3 + 3].tolist()
+            meas.append(station_ids[meas_idx])
+            y.append(meas)
+        y_k[t_idx] = y
+    return y_k
+
+
+def addsubtract_meas_vecs(y_k_plus: List, y_k_minus: List,s: int) -> List:
+    """Add or subtract y_k_minus to/from y_k_plus. If station IDs don't match, then the measurements are ignored.
+    
+    Args:
+        y_k_plus: 3d array of outputs, first  dimension is time steps, second dimension holds measurement vectors for each ground station in view, third dimension are the measurements in form of [rho,rhodot,phi,id] (output of states_to_meas)
+        y_k_minus: same
+        s: switch to define operation, 1 for addition, -1 for subtraction
+
+    
+    Returns:
+        y_k_ans: same, sum or difference between the measurement values for measurements with matching station IDs
+    """
+
+    # check if they are the same length
+    if len(y_k_plus) != len(y_k_minus):
+        raise ValueError('Measurement sets have different number of time steps.')
+
+    # form stacked meas vectors
+    y_k_stack_plus,station_ids_k_plus = form_stacked_meas_vecs(y_k_plus)
+    y_k_stack_minus,station_ids_k_minus = form_stacked_meas_vecs(y_k_minus)
+
+    y_k_stack_ans = [[] for i in y_k_minus]
+    station_ids_k_ans = [[] for i in y_k_minus]
+    for t_idx,(y_plus,y_minus,s_id_plus,s_id_minus) in enumerate(zip(y_k_stack_plus,y_k_stack_minus,station_ids_k_plus,station_ids_k_minus)):
+
+        y_ans = []
+        s_id_ans = []
+        
+        # if the same stations are in view, subtract like normal
+        if len(s_id_plus) == len(s_id_minus):
+            id_matches = np.equal(s_id_plus,s_id_minus)
+            if np.all(id_matches):
+                y_ans = np.array(y_plus) + s * np.array(y_minus)
+                s_id_ans = s_id_plus
+        
+        # if they don't have the same stations in view
+
+        # print(f'{s_id_minus=},{s_id_plus=},{s_id_ans=}')
+        # check the unstack function
+
+        y_k_stack_ans[t_idx] = y_ans
+        station_ids_k_ans[t_idx] = s_id_ans
+    
+    # Put measurments back into unstacked form with station ids
+    y_k_ans = unstack_meas_vecs(y_k_stack_ans,station_ids_k_ans)
+    return y_k_ans
 
 
 def sample_noisy_measurements(x: np.ndarray, time: float,

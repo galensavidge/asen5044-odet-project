@@ -100,9 +100,9 @@ def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
         ys_nom = problem_setup.get_measurements(x_nom_plus, t_plus,
                                                 station_ids)
 
-        dy_plus = []
-        for yp, yn in zip(ys_plus, ys_nom):
-            dy_plus = np.append(dy_plus, yp[0:3] - yn[0:3])
+        # Current perturbation measumrent    
+        dy_plus = problem_setup.addsubtract_meas_vecs([ys_plus],[ys_nom],-1)[0]
+        dy_plus_stack = problem_setup.form_stacked_meas_vecs([dy_plus])[0][0]
 
         # The total measurement noise covariance for the stacked Y vector (at
         # time k)
@@ -120,12 +120,14 @@ def run_linearized_kf(x_k: np.ndarray, y_k: List, t_k: np.ndarray,
 
         # Run one iteration of the Kalman filter to find an estimate at time k
         x_est, y_est, P, S = kalman_filters.kf_iteration(
-            x_est, u_minus, P, dy_plus, F_minus, G_minus, H_plus, M_plus, Qk,
+            x_est, u_minus, P, dy_plus_stack, F_minus, G_minus, H_plus, M_plus, Qk,
             R_aug)
+
+        # Add station IDs to the y_est output
 
         x_ests.append(x_est)
         Ps.append(P)
-        y_ests.append(y_est)
+        y_ests.append(problem_setup.unstack_meas_vecs([y_est],[station_ids])[0])
         Ss.append(S)
 
     return np.array(x_ests), y_ests, np.array(Ps), Ss
