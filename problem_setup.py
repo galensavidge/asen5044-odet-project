@@ -207,8 +207,6 @@ def addsubtract_meas_vecs(y_k_plus: List, y_k_minus: List,s: int,m: float = 1) -
             s_id_ans = s_id_plus
             
         else:
-            # if they're mismatched 
-            print(f'Time step {t_idx}, {s_id_plus=},{s_id_minus=}')
 
             # if one of the station id lists is empty, ignore them
             if np.size(s_id_plus) != 0 and np.size(s_id_minus) != 0:

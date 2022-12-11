@@ -224,10 +224,10 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
                 color=state_colors[idx],
                 label='_nolegend_')
 
-        ylims = np.mean(sig_k[30:,idx])
-
-        ax.set(xlim=[time[0], time[-1]],ylim=[-1.2*ylims,1.2*ylims],
+        ax.set(xlim=[time[0], time[-1]],
                xlabel='Time [s]',
                ylabel=state_labels[idx])
+        ylims = np.mean(sig_k[30:,idx])
+        # ax.set(ylim=[-1.2*ylims,1.2*ylims])
         ax.legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
         ax.grid()

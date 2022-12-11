@@ -101,14 +101,14 @@ def run_monte_carlo(tfinal: float, x0_true: np.ndarray, dx0: np.ndarray,P0: np.n
 def main():
 
     op = problem_setup.OdetProblem()
-    tfinal = op.T0 * 0.5
+    tfinal = op.T0 * 3
     x0_true = op.x0
     dx0 = np.array([10, 0.1, -10, -0.1])
     P0 = np.diag([200, 2, 200, 2])
     Q = 10**-10 * np.diag([1, 1])
     R = op.R
 
-    sims = run_monte_carlo(tfinal, x0_true,dx0,P0,Q,R, 2)
+    sims = run_monte_carlo(tfinal, x0_true,dx0,P0,Q,R, 10)
 
     
 

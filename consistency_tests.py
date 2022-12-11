@@ -106,8 +106,8 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
     time = sim_objs[0].truth.time
 
     avg_res_sq_norm = np.full(np.size(time),np.nan)
-    r1 = np.zeros(np.size(time))
-    r2 = np.zeros(np.size(time))
+    r1 = np.full(np.size(time),np.nan)
+    r2 = np.full(np.size(time),np.nan)
     for t_idx in range(np.size(time)):
 
         # number of measurements
@@ -129,19 +129,22 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
                 common_station_ids = station_ids
                 use_ids = station_ids
                 use_inn_cov = sim.inn_cov[t_idx]
+            elif np.all(np.equal(common_station_ids,station_ids)):
+                use_ids = station_ids
+                use_inn_cov = sim.inn_cov[t_idx]
             else:
                 use_id_idx = []
                 use_ids = []
+                inn_cov_idx = []
                 for cs_id in common_station_ids:
                     for s_id_idx,s_id in enumerate(station_ids):
                         if s_id == cs_id:
                             use_id_idx.append(s_id_idx)
                             use_ids.append(s_id)
+                            inn_cov_idx.extend([s_id_idx*3,s_id_idx*3+1,s_id_idx*3 + 2])
 
-
-                # TODO: figure out how to take the correct subset of inn cov
-                inn_cov_ids = []
-                use_inn_cov = np.eye(len(use_ids)*3)
+                print(f'Mismatched IDs during NIS. Time step {t_idx},sim number {idx}, common IDs {common_station_ids}, current sim\'s IDs {station_ids}.')
+                use_inn_cov = sim.inn_cov[t_idx][inn_cov_idx]
             
             # redo stacked measurement by only taking the common station ids
             use_dy = problem_setup.retrieve_meas_with_station_id(sim.dy_err[t_idx],use_ids)
