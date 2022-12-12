@@ -37,7 +37,7 @@ def nees_and_nis_test(sim_objs: List[KF_Sim],alpha: float):
     nis,r1_nis,r2_nis = nis_test(sim_objs,alpha)
 
     # assume all sims have the same time vector
-    time = sim_objs[0].truth.time
+    time = sim_objs[0].nom.time
 
     # plot
     fig1,ax1 = plt.subplots(1,1)
@@ -80,7 +80,7 @@ def nees_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,flo
             avg_err_sq_norm = (avg_err_sq_norm + err_sq_norm)/2
     
     # calc bounds
-    time = sim_objs[0].truth.time
+    time = sim_objs[0].nom.time
     r1 = chi2.ppf(alpha/2,N*n)/N * np.ones(np.size(time))
     r2 = chi2.ppf(1-alpha/2,N*n)/N *  np.ones(np.size(time))
 
@@ -103,7 +103,7 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
     N = len(sim_objs)
 
     # assume all sims have the same time vector
-    time = sim_objs[0].truth.time
+    time = sim_objs[0].nom.time
 
     avg_res_sq_norm = np.full(np.size(time),np.nan)
     r1 = np.full(np.size(time),np.nan)
@@ -149,7 +149,6 @@ def nis_test(sim_objs: List[KF_Sim],alpha: float) -> Tuple[np.ndarray,float,floa
             # redo stacked measurement by only taking the common station ids
             use_meas = problem_setup.retrieve_meas_with_station_id(sim.meas_err[t_idx],use_ids)
             use_meas_stack = problem_setup.form_stacked_meas_vecs([use_meas])[0][0]
-            use_inn_cov = np.eye(np.size(use_meas_stack))
 
             # get normed residual squared for current sim
             res_sq_norm = np.transpose(use_meas_stack) @ np.linalg.inv(use_inn_cov) @ use_meas_stack
