@@ -161,4 +161,4 @@ if __name__ == "__main__":
     main()
 
 # TODO:
-# y true is going to have different station ids from y nom on every run
+# update initialization for true traj
