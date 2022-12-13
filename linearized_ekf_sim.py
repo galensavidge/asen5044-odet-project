@@ -14,6 +14,17 @@ import problem_setup
 
 def main():
     op = problem_setup.OdetProblem()
+
+    dx_est_0 = np.zeros(4)
+    P0 = np.diag([10, 0.2, 10, 0.2])
+    Q = 10**-10 * np.eye(2)
+
+    run_lkf_nl_sim(op, dx_est_0, P0, Q)
+    #  run_lkf_canvas_data(op, dx_est_0, P0, Q)
+
+
+def run_lkf_nl_sim(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
+                   P0: np.ndarray, Q: np.ndarray):
     prop_time = 4 * op.T0
 
     # Propogate nominal trajectory
@@ -36,9 +47,6 @@ def main():
     y_k_pert_nl = problem_setup.states_to_noisy_meas(x_k_pert_nl, t,
                                                      station_ids_list, op.R)
 
-    dx_est_0 = np.array([10, 0.1, -10, -0.1])
-    P0 = np.diag([200, 2, 200, 2])
-    Q = 10**-10 * np.eye(2)
     R = op.R
     dx_k_est, dy_k_est, P_est_k, S_k = run_linearized_kf(
         x_k_nom, y_k_pert_nl, t, dx_est_0, P0, op.dt, Q, R)
@@ -55,6 +63,30 @@ def main():
     fig, axs = plt.subplots(4, 1)
     plotting.plot_2sig_err(axs, x_k_err, t, P_est_k)
     fig.suptitle('State Estimate Error')
+    fig.tight_layout()
+
+    plt.show()
+
+
+def run_lkf_canvas_data(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
+                        P0: np.ndarray, Q: np.ndarray):
+    op.load_canvas_data()
+
+    prop_time = op.time[-1]
+
+    # Propogate nominal trajectory
+    w_no_noise = np.zeros((int(prop_time / op.dt), 2))
+    t, x_k_nom = nonlinear_sim.integrate_nl_ct_eom(op.x0, op.dt, prop_time,
+                                                   w_no_noise)
+
+    dx_k_est, dy_k_est, P_est_k, S_k = run_linearized_kf(
+        x_k_nom, op.y, op.time, dx_est_0, P0, op.dt, Q, op.R)
+
+    x_k_est = x_k_nom + dx_k_est
+
+    fig, axs = plt.subplots(4, 1)
+    plotting.states(x_k_est, t, axs, 'Estimated')
+    fig.suptitle('Satellite State Estimate')
     fig.tight_layout()
 
     plt.show()

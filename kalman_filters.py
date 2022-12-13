@@ -100,8 +100,11 @@ def a_posteriori_covariance_ekf(Pm: np.ndarray, H: np.ndarray,
         H: Output matrix at time k
         K: Kalman gain at time k
     """
-    n = np.size(H, 1)
-    return (np.eye(n) - K @ H) @ Pm
+    if H is None:
+        return Pm
+    else:
+        n = np.size(H, 1)
+        return (np.eye(n) - K @ H) @ Pm
 
 
 def innovation_covariance_matrix(Pm: np.ndarray, H: np.ndarray,

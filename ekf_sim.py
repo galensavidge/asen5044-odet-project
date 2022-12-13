@@ -14,9 +14,19 @@ import problem_setup
 
 def main():
     op = problem_setup.OdetProblem()
-    prop_time = 4 * op.T0
 
+    x_est_0 = op.x0
+    P0 = np.diag([200, 2, 200, 2])
+    Q = 10**-10 * np.diag([1, 1])
+
+    #  run_ekf_nl_sim(op, x_est_0, P0, Q)
+    run_ekf_canvas_data(op, x_est_0, P0, Q)
+
+
+def run_ekf_nl_sim(op: problem_setup.OdetProblem, x_est_0: np.ndarray,
+                   P0: np.ndarray, Q: np.ndarray):
     # Prop nonlinear perturbations
+    prop_time = 4 * op.T0
     dx0 = 0.1 * np.array([0, 0.075, 0, -0.021])
     w = problem_setup.form_process_noise(int(np.floor(prop_time / op.dt)),
                                          op.W)
@@ -31,12 +41,8 @@ def main():
     y_k_pert_nl = problem_setup.states_to_noisy_meas(x_k_pert_nl, t,
                                                      station_ids_list, op.R)
 
-    x_est_0 = op.x0 + np.array([10, 0.1, -10, -0.1])
-    P0 = np.diag([200, 2, 200, 2])
-    Q = 10**-10 * np.diag([1, 1])
-    R = op.R
     x_k_est, y_k_est, P_est_k, S_k = run_ekf(y_k_pert_nl, t, x_est_0, P0,
-                                             op.dt, Q, R)
+                                             op.dt, Q, op.R)
 
     x_k_err = x_k_est - x_k_pert_nl
 
@@ -49,6 +55,21 @@ def main():
     fig, axs = plt.subplots(4, 1)
     plotting.plot_2sig_err(axs, x_k_err, t, P_est_k)
     fig.suptitle('State Estimate Error')
+    fig.tight_layout()
+
+    plt.show()
+
+
+def run_ekf_canvas_data(op: problem_setup.OdetProblem, x_est_0: np.ndarray,
+                        P0: np.ndarray, Q: np.ndarray):
+    op.load_canvas_data()
+
+    x_k_est, y_k_est, P_est_k, S_k = run_ekf(op.y, op.time, x_est_0, P0, op.dt,
+                                             Q, op.R)
+
+    fig, axs = plt.subplots(4, 1)
+    plotting.states(x_k_est, op.time, axs, 'Estimated')
+    fig.suptitle('Satellite State Estimate')
     fig.tight_layout()
 
     plt.show()
