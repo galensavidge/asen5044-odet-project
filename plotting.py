@@ -187,7 +187,8 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
                   err_k: np.ndarray,
                   time: np.ndarray,
                   err_cov_k: np.ndarray,
-                  legend_label: str = ''):
+                  legend_label: str = '',
+                  bounds_relative_to_state: bool = False):
     """Plot state error and 2sigma bounds.
 
     Args:
@@ -200,10 +201,16 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
 
     # get 2 sigma errors
     n = np.size(err_k[0])
-    sig_k = np.zeros_like(err_k)
+    twosig_k = np.zeros_like(err_k)
     for t_idk, err_cov in enumerate(err_cov_k):
         for s_idx in range(n):
-            sig_k[t_idk, s_idx] = (err_cov[s_idx, s_idx]**0.5) * 2
+            twosig_k[t_idk, s_idx] = (err_cov[s_idx, s_idx]**0.5) * 2
+
+    x_plus_2sig = twosig_k
+    x_minus_2sig = -twosig_k
+    if bounds_relative_to_state:
+        x_plus_2sig += err_k
+        x_minus_2sig += err_k
 
     # plot
     state_labels = ['dX [km]', 'dXdot [km/s]', 'dY [km]', 'dYdot[km]']
@@ -214,12 +221,12 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
                 color=state_colors[idx],
                 label='Error' + legend_label)
         ax.plot(time,
-                sig_k[:, idx],
+                x_plus_2sig[:, idx],
                 '--',
                 color=state_colors[idx],
                 label='2 Sigma' + legend_label)
         ax.plot(time,
-                -sig_k[:, idx],
+                x_minus_2sig[:, idx],
                 '--',
                 color=state_colors[idx],
                 label='_nolegend_')
@@ -227,7 +234,7 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
         ax.set(xlim=[time[0], time[-1]],
                xlabel='Time [s]',
                ylabel=state_labels[idx])
-        ylims = np.mean(sig_k[30:,idx])
+        #  ylims = np.mean(sig_k[30:, idx])
         # ax.set(ylim=[-1.2*ylims,1.2*ylims])
         ax.legend(bbox_to_anchor=(1.04, 0.5), loc="center left")
         ax.grid()

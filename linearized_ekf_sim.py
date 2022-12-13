@@ -19,8 +19,8 @@ def main():
     P0 = np.diag([10, 0.2, 10, 0.2])
     Q = 10**-10 * np.eye(2)
 
-    #  run_lkf_nl_sim(op, dx_est_0, P0, Q)
-    run_lkf_canvas_data(op, dx_est_0, P0, Q)
+    run_lkf_nl_sim(op, dx_est_0, P0, Q)
+    #  run_lkf_canvas_data(op, dx_est_0, P0, Q)
 
 
 def run_lkf_nl_sim(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
@@ -72,7 +72,7 @@ def run_lkf_canvas_data(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
                         P0: np.ndarray, Q: np.ndarray):
     op.load_canvas_data()
 
-    prop_time = op.time[-1] + op.dt * 0.1
+    prop_time = op.time[-1]
 
     # Propogate nominal trajectory
     w_no_noise = np.zeros((int(prop_time / op.dt), 2))
@@ -85,12 +85,7 @@ def run_lkf_canvas_data(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
     x_k_est = x_k_nom + dx_k_est
 
     fig, axs = plt.subplots(4, 1)
-    plotting.plot_2sig_err(axs,
-                           x_k_est,
-                           op.time,
-                           P_est_k,
-                           'Estimated',
-                           bounds_relative_to_state=True)
+    plotting.states(x_k_est, t, axs, 'Estimated')
     fig.suptitle('Satellite State Estimate')
     fig.tight_layout()
 

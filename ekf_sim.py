@@ -18,9 +18,10 @@ def main():
     x_est_0 = op.x0
     P0 = np.diag([200, 2, 200, 2])
     Q = 10**-10 * np.diag([1, 1])
-
     #  run_ekf_nl_sim(op, x_est_0, P0, Q)
-    run_ekf_canvas_data(op, x_est_0, P0, Q)
+
+    Q_canvas = 10**-8 * np.diag([1, 1])
+    run_ekf_canvas_data(op, x_est_0, P0, Q_canvas)
 
 
 def run_ekf_nl_sim(op: problem_setup.OdetProblem, x_est_0: np.ndarray,
@@ -68,7 +69,12 @@ def run_ekf_canvas_data(op: problem_setup.OdetProblem, x_est_0: np.ndarray,
                                              Q, op.R)
 
     fig, axs = plt.subplots(4, 1)
-    plotting.states(x_k_est, op.time, axs, 'Estimated')
+    plotting.plot_2sig_err(axs,
+                           x_k_est,
+                           op.time,
+                           P_est_k,
+                           'Estimated',
+                           bounds_relative_to_state=True)
     fig.suptitle('Satellite State Estimate')
     fig.tight_layout()
 
