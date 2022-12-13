@@ -16,7 +16,7 @@ import util
 
 
 class Sim:
-
+    """Holds nominal simulation."""
     def __init__(self, tfinal: float, x0: np.ndarray):
         # common parameters
         self.op = problem_setup.OdetProblem()
@@ -35,7 +35,7 @@ class Sim:
 
 
 class KF_Sim:
-
+    """Holds truth simulation and KF output."""
     def __init__(self, nom_sim: Sim, x_est0: np.ndarray, P0: np.ndarray,
                  Qkf: np.ndarray, Rkf: np.ndarray, kf_type: str):
         """Run truth sim with noise and perturbation, perform KF, store
@@ -183,8 +183,8 @@ def run_lkf_mc(tfinal: float,
             fig3, axs3 = plt.subplots(4, 1)
             plotting.states(sim.dx, sim.nom.time, axs3, 'Truth')
             plotting.states(sim.dx_est, sim.nom.time, axs3, 'Est')
-            fig1.suptitle(f'LKF State Perturbations, Est #{idx+1}')
-            fig1.tight_layout()
+            fig3.suptitle(f'LKF State Perturbations, Est #{idx+1}')
+            fig3.tight_layout()
 
         if plot_err:
             fig2, axs2 = plt.subplots(4, 1)
@@ -250,16 +250,19 @@ def main():
     op = problem_setup.OdetProblem()
     tfinal = op.T0 * 0.5
     x0_nom = op.x0
-    Q = 10**-10 * np.diag([1, 1])
+    # Q = 10**-10 * np.diag([1, 1])
     R = op.R
 
     # MC params
     num_sims = 1
     alpha = 0.05
 
+    # data from canvas
+    op.load_canvas_data()
+
     # run whichever or both
-    #  run_lkf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, True, True, True, True)
-    run_ekf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, False, False, False)
+    run_lkf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, True, True, True, True)
+    # run_ekf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, False, False, False)
 
     plt.show()
 

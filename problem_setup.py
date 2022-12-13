@@ -3,6 +3,7 @@ import dataclasses
 from typing import List, Tuple
 
 import numpy as np
+from scipy.io import loadmat
 
 import util
 
@@ -360,3 +361,22 @@ class OdetProblem:
         self.x0 = [self.r0, 0, 0, self.v0]
         self.R = np.array([[0.01, 0, 0], [0, 1, 0], [0, 0, 0.01]])
         self.W = np.eye(2) * 1e-10
+
+    def load_canvas_data(self) -> None:
+        rel_path = '5044/asen5044-odet-project/orbitdeterm_finalproj_KFdata.mat'
+        # TODO for galen: make a rel_path for your computer here if you want
+        canvas_data = loadmat(rel_path)
+    
+        # pull time vector out
+        self.time = canvas_data['tvec'][0]
+
+        # pull measurements out and put them in list form
+        self.y = [[] for i in self.time]
+        for t_idx,ycell in enumerate(canvas_data['ydata'][0]):
+            self.y[t_idx] = ycell.transpose().tolist()
+
+        self.y[0][0][-1] = 0
+
+        
+
+
