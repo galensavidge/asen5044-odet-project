@@ -373,6 +373,11 @@ class OdetProblem:
         # pull measurements out and put them in list form
         self.y = [[] for i in self.time]
         for t_idx, ycell in enumerate(canvas_data['ydata'][0]):
-            self.y[t_idx] = ycell.transpose().tolist()
+            y = ycell.transpose().tolist()
+            if t_idx > 0:
+                for y_ in y:
+                    y_[3] -= 1
+
+            self.y[t_idx] = y
 
         self.y[0][0][-1] = 0

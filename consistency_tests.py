@@ -76,10 +76,9 @@ def nees_test(sim_objs: List[KF_Sim],
         err_sq_norm = sq_weight(sim.state_err, sim.err_cov)
 
         # avg into total
-        if idx == 0:
-            avg_err_sq_norm = err_sq_norm
-        else:
-            avg_err_sq_norm = (avg_err_sq_norm + err_sq_norm) / 2
+        avg_err_sq_norm += err_sq_norm
+
+    avg_err_sq_norm /= len(sim_objs)
 
     # calc bounds
     time = sim_objs[0].nom.time
@@ -151,7 +150,9 @@ def nis_test(sim_objs: List[KF_Sim],
                             ])
 
                 print(
-                    f'Mismatched IDs during NIS. Time step {t_idx},sim number {idx}, common IDs {common_station_ids}, current sim\'s IDs {station_ids}.'
+                    f'Mismatched IDs during NIS. Time step {t_idx}, sim number'
+                    ' {idx}, common IDs {common_station_ids}, current sim\'s '
+                    ' IDs {station_ids}.'
                 )
                 use_inn_cov = sim.inn_cov[t_idx][inn_cov_idx]
 
@@ -166,10 +167,9 @@ def nis_test(sim_objs: List[KF_Sim],
                 use_inn_cov) @ use_meas_stack
 
             # avg into total
-            if idx == 0:
-                avg_res_sq_norm_tidx = res_sq_norm
-            else:
-                avg_res_sq_norm_tidx = (avg_res_sq_norm_tidx + res_sq_norm) / 2
+            avg_res_sq_norm_tidx += res_sq_norm
+
+        avg_res_sq_norm_tidx /= len(sim_objs)
 
         avg_res_sq_norm[t_idx] = avg_res_sq_norm_tidx
 

@@ -16,11 +16,11 @@ def main():
     op = problem_setup.OdetProblem()
 
     x_est_0 = op.x0
-    P0 = np.diag([200, 2, 200, 2])
-    Q = 10**-10 * np.diag([1, 1])
+    P0 = np.diag([20, 0.2, 20, 0.2])
+    #  Q = 10**-10 * np.diag([1, 1])
     #  run_ekf_nl_sim(op, x_est_0, P0, Q)
 
-    Q_canvas = 10**-8 * np.diag([1, 1])
+    Q_canvas = 10**-7 * np.diag([1, 1])
     run_ekf_canvas_data(op, x_est_0, P0, Q_canvas)
 
 
@@ -73,7 +73,7 @@ def run_ekf_canvas_data(op: problem_setup.OdetProblem, x_est_0: np.ndarray,
                            x_k_est,
                            op.time,
                            P_est_k,
-                           'Estimated',
+                           'Estimate',
                            bounds_relative_to_state=True)
     fig.suptitle('Satellite State Estimate')
     fig.tight_layout()
@@ -102,8 +102,11 @@ def run_ekf(y_k: List, t_k: np.ndarray, x0_est: np.ndarray, P0: np.ndarray,
 
         # Propagate nonlinear dynamics to get a priori state estimate
         w_no_noise = problem_setup.form_zero_process_noise(2)
-        _, xms = nonlinear_sim.integrate_nl_ct_eom(x_est, dt, 1.1 * dt,
-                                                   w_no_noise)
+        _, xms = nonlinear_sim.integrate_nl_ct_eom(x_est,
+                                                   dt,
+                                                   dt,
+                                                   w_no_noise,
+                                                   only_final_time=True)
         xm = xms[-1]
 
         # Find measurement vector and ground stations in view at time k

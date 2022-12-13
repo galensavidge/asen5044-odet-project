@@ -78,12 +78,19 @@ def nonlinear_ct_eom(t: float, x: np.ndarray, w: np.ndarray,
     return [Xdot, -mu * X / r3 + w[t_idx, 0], Ydot, -mu * Y / r3 + w[t_idx, 1]]
 
 
-def integrate_nl_ct_eom(x0: np.ndarray, dt: float, t_final: float,
-                        w: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def integrate_nl_ct_eom(
+        x0: np.ndarray,
+        dt: float,
+        t_final: float,
+        w: np.ndarray,
+        only_final_time: bool = False) -> Tuple[np.ndarray, np.ndarray]:
     """Integrates the NL EOMs and returns the state at a set of time points."""
 
     # construct t evals
-    t_points = np.arange(0, t_final, dt)
+    if only_final_time:
+        t_points = [0, t_final]
+    else:
+        t_points = np.arange(0, t_final, dt)
 
     # integrate
     solution = integrate.solve_ivp(fun=nonlinear_ct_eom,

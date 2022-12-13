@@ -16,11 +16,12 @@ def main():
     op = problem_setup.OdetProblem()
 
     dx_est_0 = np.zeros(4)
-    P0 = np.diag([10, 0.2, 10, 0.2])
-    Q = 10**-10 * np.eye(2)
-
+    P0 = 10*np.diag([10, 0.2, 10, 0.2])
+    #  Q = 10**-10 * np.eye(2)
     #  run_lkf_nl_sim(op, dx_est_0, P0, Q)
-    run_lkf_canvas_data(op, dx_est_0, P0, Q)
+
+    Q_canvas = 10**-10 * np.eye(2)
+    run_lkf_canvas_data(op, dx_est_0, P0, Q_canvas)
 
 
 def run_lkf_nl_sim(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
@@ -47,9 +48,8 @@ def run_lkf_nl_sim(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
     y_k_pert_nl = problem_setup.states_to_noisy_meas(x_k_pert_nl, t,
                                                      station_ids_list, op.R)
 
-    R = op.R
     dx_k_est, dy_k_est, P_est_k, S_k = run_linearized_kf(
-        x_k_nom, y_k_pert_nl, t, dx_est_0, P0, op.dt, Q, R)
+        x_k_nom, y_k_pert_nl, t, dx_est_0, P0, op.dt, Q, op.R)
 
     x_k_est = x_k_nom + dx_k_est
     x_k_err = x_k_est - x_k_pert_nl
@@ -89,7 +89,7 @@ def run_lkf_canvas_data(op: problem_setup.OdetProblem, dx_est_0: np.ndarray,
                            x_k_est,
                            op.time,
                            P_est_k,
-                           'Estimated',
+                           'Estimate',
                            bounds_relative_to_state=True)
     fig.suptitle('Satellite State Estimate')
     fig.tight_layout()

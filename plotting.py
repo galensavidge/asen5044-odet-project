@@ -219,12 +219,12 @@ def plot_2sig_err(axs: List[matplotlib.axes.Axes],
         ax.plot(time,
                 err_k[:, idx],
                 color=state_colors[idx],
-                label='Error' + legend_label)
+                label=legend_label)
         ax.plot(time,
                 x_plus_2sig[:, idx],
                 '--',
                 color=state_colors[idx],
-                label='2 Sigma' + legend_label)
+                label='2 Sigma Bounds')
         ax.plot(time,
                 x_minus_2sig[:, idx],
                 '--',

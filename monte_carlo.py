@@ -17,6 +17,7 @@ import util
 
 class Sim:
     """Holds nominal simulation."""
+
     def __init__(self, tfinal: float, x0: np.ndarray):
         # common parameters
         self.op = problem_setup.OdetProblem()
@@ -36,6 +37,7 @@ class Sim:
 
 class KF_Sim:
     """Holds truth simulation and KF output."""
+
     def __init__(self, nom_sim: Sim, x_est0: np.ndarray, P0: np.ndarray,
                  Qkf: np.ndarray, Rkf: np.ndarray, kf_type: str):
         """Run truth sim with noise and perturbation, perform KF, store
@@ -248,21 +250,22 @@ def main():
 
     # params shared between KFs
     op = problem_setup.OdetProblem()
-    tfinal = op.T0 * 0.5
+    tfinal = op.T0
     x0_nom = op.x0
-    # Q = 10**-10 * np.diag([1, 1])
+    Q = 10**-10 * np.diag([1, 1])
     R = op.R
 
     # MC params
-    num_sims = 1
+    num_sims = 20
     alpha = 0.05
 
     # data from canvas
     op.load_canvas_data()
 
     # run whichever or both
-    run_lkf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, True, True, True, True)
-    # run_ekf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, False, False, False)
+    run_lkf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, False, False, False,
+               False)
+    #  run_ekf_mc(tfinal, x0_nom, Q, R, num_sims, alpha, False, False, False)
 
     plt.show()
 
